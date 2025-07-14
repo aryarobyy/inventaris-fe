@@ -1,5 +1,5 @@
 import { ItemAvailability, ItemCategory, ItemCondition } from "./enums";
-import type { LoanItemModel } from "./loanItem.model";
+import type { LoanItemModel } from "./loan.model";
 
 export interface ItemModel {
   id: number;
@@ -10,8 +10,8 @@ export interface ItemModel {
   imgUrl?: string;
   pairId?: number;
   statusNotes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 
   loanItems?: LoanItemModel[];
   category: ItemCategory;

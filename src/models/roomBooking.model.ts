@@ -5,31 +5,31 @@ export interface RoomBookingModel {
   borrowerId: number;
   roomId: number;
   bookingDate: Date;
-  startTime: Date;
-  endTime: Date;
-  actualReturnTime?: Date;
+  startTime: string;
+  endTime: string;
+  actualReturnTime?: string;
   purpose?: string;
   notes?: string;
   bookingStatus: BookingStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PostRoomBookingModel {
   borrowerId: number;
   roomId: number;
-  bookingDate: Date;
-  startTime: Date;
-  endTime: Date;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
   purpose?: string;
   notes?: string;
   bookingStatus?: BookingStatus;
 }
 
 export interface UpdateRoomBookingModel {
-  startTime?: Date;
-  endTime?: Date;
-  actualReturnTime?: Date;
+  startTime?: string;
+  endTime?: string;
+  actualReturnTime?: string;
   purpose?: string;
   notes?: string;
   bookingStatus?: BookingStatus;

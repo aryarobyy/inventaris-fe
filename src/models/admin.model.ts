@@ -6,8 +6,8 @@ export interface AdminModel {
   name: string;
   password: string;
   status: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   role: Role;
 }
 

@@ -8,8 +8,8 @@ export interface RoomModel {
   capacity?: number;
   location?: string;
   roomStatus: RoomStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PostRoomModel {

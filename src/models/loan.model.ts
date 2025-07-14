@@ -1,42 +1,52 @@
 import type { LoanStatus } from "./enums";
-import type { LoanItemModel } from "./loanItem.model";
 import type { UserModel } from "./user.model";
+
+export interface LoanItemModel {
+  id: number;
+  loanId: number;
+  itemId: number;
+  borrowedQuantity: number;
+  item: {
+    id: number;
+    name: string;
+  };
+}
 
 export interface LoanModel {
   id: number;
   borrower: UserModel;
   borrowerId: number;
-  loanDate: Date;
-  dueDate: Date;
-  returnDate?: Date | null;
+  loanDate: string;
+  dueDate: string;
+  returnDate?: string | null;
   notes?: string | null;
-  createdAt: Date; 
-  updatedAt: Date;
-  loanStatus: LoanStatus
+  createdAt: string;
+  updatedAt: string;
+  loanStatus: LoanStatus;
   loanItems: LoanItemModel[];
 }
 
 export interface PostLoanModel {
   borrowerId: number;
-  loanDate: Date; 
-  dueDate: Date;
-  returnDate?: Date | null;
+  loanDate: string; 
+  dueDate: string;
+  returnDate?: string | null;
   notes?: string | null;
   loanStatus: LoanStatus;
   loanItems: {
     itemId: number; 
-    quantity: number;
+    borrowedQuantity: number;
   }[];
 }
 
 export interface UpdateLoanModel {
-  loanDate?: Date;
-  dueDate?: Date;
-  returnDate?: Date | null;
+  loanDate?: string;
+  dueDate?: string;
+  returnDate?: string | null;
   notes?: string | null;
   loanStatus?: LoanStatus;
   loanItems?: {
     itemId: number;
-    quantity: number;
+    borrowedQuantity: number;
   }[];
 }
