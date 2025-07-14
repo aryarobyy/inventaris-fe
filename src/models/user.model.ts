@@ -9,7 +9,7 @@ export interface UserModel {
   academicYear: string;
   phoneNumber: string;
   organization: string;
-  createdAt: Date;  updatedAt: Date;
+  createdAt: string;  updatedAt: string;
   
   // loans?: LoanItemModel[];
   // roomBookings?: RoomBookingModel[];
