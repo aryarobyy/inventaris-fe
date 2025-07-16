@@ -1,4 +1,6 @@
-export const USERKEY = import.meta.env.VITE_USERKEY;
+export const USERKEY = "user";
+export const ITEMKEY = "item";
+export const ADMINKEY = "admin";
 export const API_BASE_URL = import.meta.env.VITE_BACKEND_URI;
 
 export const USER = "user";
