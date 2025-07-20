@@ -35,12 +35,38 @@
       Tidak ada item tersedia untuk kategori ini
     </div>
 
-    <!-- Pilihan yang sudah dipilih -->
     <div v-if="selectedItems.length > 0" class="pt-4">
-      <h4 class="text-sm font-medium mb-2">Item Dipilih:</h4>
-      <ul class="list-disc list-inside text-sm text-gray-700">
-        <li v-for="item in selectedItems" :key="item.id">{{ item.name }}</li>
-      </ul>
+      <h4 class="text-sm font-medium mb-3">Item Dipilih:</h4>
+      <div class="space-y-3">
+        <div 
+          v-for="item in selectedItems" 
+          :key="item.id"
+          class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+        >
+          <div class="flex-1">
+            <span class="text-sm font-medium text-gray-800">{{ item.name }}</span>
+            <span v-if="item.brand" class="text-sm text-gray-600"> - {{ item.brand }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600">Qty:</label>
+            <Input 
+              v-model="itemQuantities[item.id]"
+              placeHolder="0"
+              type="number"
+              :id="`quantity-${item.id}`"
+              class="w-20"
+              min="1"
+              @input="updateQuantity(item.id, $event)"
+            />
+          </div>
+          <button
+            @click="removeItem(item)"
+            class="text-red-500 hover:text-red-700 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -51,6 +77,7 @@ import { ItemCategory } from '../../models/enums';
 import type { ItemModel } from '../../models/item.model';
 import { getItemByCat } from '../../provider/item.provider';
 import Dropdown from '../Dropdown.vue';
+import Input from '../Input.vue';
 
 const selectedCategory = ref<{ label: string; value: ItemCategory | null }>({
   label: '--Pilih--',
@@ -59,6 +86,7 @@ const selectedCategory = ref<{ label: string; value: ItemCategory | null }>({
 const items = ref<ItemModel[]>([])
 const selectedItems = ref<ItemModel[]>([])
 const isLoadingItems = ref(false)
+const itemQuantities = ref<Record<string, string>>({})
 
 const categoryOptions = Object.entries(ItemCategory).map(([key, value]) => ({
   label: key.replace(/_/g, ' ').toUpperCase(),
@@ -72,6 +100,7 @@ watch(selectedCategory, async (newCategory) => {
       const response = await getItemByCat(newCategory.value)
       items.value = Array.isArray(response) ? response : []
       selectedItems.value = []
+      itemQuantities.value = {}
     } catch (error) {
       console.error('Error fetching items:', error)
       items.value = []
@@ -85,9 +114,23 @@ const toggleItem = (item: ItemModel) => {
   const index = selectedItems.value.findIndex(i => i.id === item.id)
   if (index >= 0) {
     selectedItems.value.splice(index, 1)
+    delete itemQuantities.value[item.id]
   } else {
     selectedItems.value.push(item)
+    itemQuantities.value[item.id] = '1'
   }
+}
+
+const removeItem = (item: ItemModel) => {
+  const index = selectedItems.value.findIndex(i => i.id === item.id)
+  if (index >= 0) {
+    selectedItems.value.splice(index, 1)
+    delete itemQuantities.value[item.id]
+  }
+}
+
+const updateQuantity = (itemId: number, value: string) => {
+  itemQuantities.value[itemId] = value
 }
 
 const isSelected = (item: ItemModel) => {
@@ -97,12 +140,16 @@ const isSelected = (item: ItemModel) => {
 defineExpose({
   getSelection: () => ({
     category: selectedCategory.value.value,
-    items: selectedItems.value
+    items: selectedItems.value.map(item => ({
+      ...item,
+      quantity: parseInt(itemQuantities.value[item.id] || '1')
+    }))
   }),
   reset: () => {
     selectedCategory.value = { label: '--Pilih--', value: null }
     selectedItems.value = []
     items.value = []
+    itemQuantities.value = {}
   }
 })
 </script>

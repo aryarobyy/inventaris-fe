@@ -1,4 +1,5 @@
 import { ITEM } from "../core/contants";
+import type { ItemCategory } from "../models/enums";
 import type { ItemModel, PostItemModel, UpdateItemModel } from "../models/item.model";
 import apiHandler from "./api.handler";
 
@@ -25,3 +26,8 @@ export const updateItem = async (id: number, item: UpdateItemModel): Promise<Ite
 export const deleteItem = async (id: number): Promise<void> => {
   await apiHandler.delete(`/${ITEM}/${id}`);
 };
+
+export const getItemByCat = async (cat: ItemCategory): Promise<ItemModel[]> => {
+  const data = await apiHandler.get(`/${ITEM}/category/${cat}`);
+  return data.data.data.data
+}
