@@ -90,22 +90,24 @@
               <button 
                 @click="updateLoanStatus(loan, LoanStatus.APPROVED)"
                 class="flex-1 inline-flex items-center justify-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                :disabled="loan.loanStatus === LoanStatus.APPROVED"
+                :disabled="loan.loanStatus === LoanStatus.APPROVED || updatingLoanIds.has(loan.id)"
               >
-                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div v-if="updatingLoanIds.has(loan.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
+                <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
-                Setujui
+                {{ updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Setujui' }}
               </button>
               <button 
                 @click="updateLoanStatus(loan, LoanStatus.CANCELLED)"
                 class="flex-1 inline-flex items-center justify-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                :disabled="loan.loanStatus === LoanStatus.CANCELLED"
+                :disabled="loan.loanStatus === LoanStatus.CANCELLED || updatingLoanIds.has(loan.id)"
               >
-                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div v-if="updatingLoanIds.has(loan.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
+                <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
-                Tolak
+                {{ updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Tolak' }}
               </button>
             </div>
           </div>
@@ -172,22 +174,24 @@
                         <button 
                           @click="updateLoanStatus(loan, LoanStatus.APPROVED)"
                           class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          :disabled="loan.loanStatus === LoanStatus.APPROVED"
+                          :disabled="loan.loanStatus === LoanStatus.APPROVED || updatingLoanIds.has(loan.id)"
                         >
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div v-if="updatingLoanIds.has(loan.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
+                          <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                           </svg>
-                          Setujui
+                          {{ updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Setujui' }}
                         </button>
                         <button 
                           @click="updateLoanStatus(loan, LoanStatus.CANCELLED)"
                           class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          :disabled="loan.loanStatus === LoanStatus.CANCELLED"
+                          :disabled="loan.loanStatus === LoanStatus.CANCELLED || updatingLoanIds.has(loan.id)"
                         >
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div v-if="updatingLoanIds.has(loan.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
+                          <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                           </svg>
-                          Tolak
+                          {{ updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Tolak' }}
                         </button>
                       </div>
                     </td>
@@ -208,11 +212,40 @@
         </div>
       </div>
     </div>
+
+    <!-- Success/Error Toast Notifications -->
+    <div v-if="notification.show" 
+         class="fixed bottom-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border border-gray-200 transform transition-all duration-300 ease-in-out"
+         :class="notification.type === 'success' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'">
+      <div class="p-4">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <svg v-if="notification.type === 'success'" class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <svg v-else class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3 w-0 flex-1 pt-0.5">
+            <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
+            <p class="mt-1 text-sm text-gray-500">{{ notification.message }}</p>
+          </div>
+          <div class="ml-4 flex-shrink-0 flex">
+            <button @click="hideNotification" class="inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, watchEffect } from 'vue'
 import type { LoanModel } from '../models/loan.model'
 import { updateLoan } from '../provider/loan.provider'
 import { LoanStatus } from '../models/enums'
@@ -231,17 +264,34 @@ const props = withDefaults(defineProps<Props>(), {
   error: ""
 })
 
+const emit = defineEmits<{
+  loanUpdated: [loan: LoanModel]
+}>()
 
-const loansPending = computed(() => props.loans.filter((loan) => loan.loanStatus === LoanStatus.PENDING));
+const localLoans = ref<LoanModel[]>([])
+
+watchEffect(() => {
+  localLoans.value = [...props.loans]
+})
+
+const updatingLoanIds = ref(new Set<number>())
+
+const notification = reactive({
+  show: false,
+  type: 'success' as 'success' | 'error',
+  title: '',
+  message: ''
+})
+
 const search = ref('')
 const filterStatus = ref('')
 
 const filteredLoansAlternative = computed(() => {
   if (!search.value && !filterStatus.value) {
-    return props.loans;
+    return localLoans.value;
   }
 
-  return props.loans.filter((loan) => {
+  return localLoans.value.filter((loan) => {
     const searchTerm = search.value.toLowerCase().trim();
     
     const searchMatch = !searchTerm || 
@@ -286,7 +336,6 @@ const loanStatusOptions = [
   { value: LoanStatus.CANCELLED, label: 'Ditolak' },
 ];
 
-
 const getStatusText = (status: LoanStatus) => {
   switch (status) {
     case LoanStatus.PENDING:
@@ -314,17 +363,58 @@ const statusClass = (status: LoanStatus) => {
   }
 }
 
+const showNotification = (type: 'success' | 'error', title: string, message: string) => {
+  notification.show = true
+  notification.type = type
+  notification.title = title
+  notification.message = message
+  
+  setTimeout(() => {
+    hideNotification()
+  }, 5000)
+}
+
+const hideNotification = () => {
+  notification.show = false
+}
+
 const updateLoanStatus = async (loan: LoanModel, newStatus: LoanStatus) => {
+  updatingLoanIds.value.add(loan.id)
+  
   try {
-    const data = await updateLoan(
-      loan.id,{
+    const updatedLoanData = await updateLoan(loan.id, {
+      loanStatus: newStatus
+    })
+    
+    const loanIndex = localLoans.value.findIndex(l => l.id === loan.id)
+    if (loanIndex !== -1) {
+      localLoans.value[loanIndex] = {
+        ...localLoans.value[loanIndex],
         loanStatus: newStatus
       }
+    }
+    
+    emit('loanUpdated', localLoans.value[loanIndex])
+    
+    const statusText = newStatus === LoanStatus.APPROVED ? 'disetujui' : 'ditolak'
+    showNotification(
+      'success',
+      'Berhasil!',
+      `Peminjaman ${loan.borrower.name} berhasil ${statusText}.`
     )
-    console.log(`Updating loan ${loan.id} to ${newStatus}`)
-    console.log("WOIII", data)
-  } catch (error) {
+    
+    console.log(`Updated loan ${loan.id} to ${newStatus}`, updatedLoanData)
+    
+  } catch (error: any) {
     console.error('Error updating loan status:', error)
+    
+    showNotification(
+      'error',
+      'Gagal!',
+      'Terjadi kesalahan saat memperbarui status peminjaman.'
+    )
+  } finally {
+    updatingLoanIds.value.delete(loan.id)
   }
 }
 </script>
