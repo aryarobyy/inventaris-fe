@@ -1,4 +1,4 @@
-import { Role } from "./enums";
+import type { Role } from "./enums";
 
 export interface AdminModel {
   id: number;
@@ -9,6 +9,11 @@ export interface AdminModel {
   createdAt: string;
   updatedAt: string;
   role: Role;
+}
+
+export interface LoginAdminModel {
+  username: string;
+  password: string;
 }
 
 export interface PostAdminModel {
