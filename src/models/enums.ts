@@ -4,6 +4,8 @@ export const Role = {
   SUPER_ADMIN: 'super_admin'
 } as const
 
+export type Role = typeof Role[keyof typeof Role]
+
 export const ItemCategory = {
   COMPUTER: 'computer',
   WEB_CAM: 'web_cam',

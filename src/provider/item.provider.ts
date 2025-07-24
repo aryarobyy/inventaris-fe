@@ -15,12 +15,12 @@ export const getItemById = async (id: number): Promise<ItemModel> => {
 
 export const getItems = async (): Promise<ItemModel[]> => {
   const data = await apiHandler.get<ItemModel[]>(`/${ITEM}/`);
-  return data.data;
+  return data.data.data.data;
 };
 
 export const updateItem = async (id: number, item: UpdateItemModel): Promise<ItemModel> => {
   const data = await apiHandler.put<ItemModel>(`/${ITEM}/${id}`, item);
-  return data.data;
+  return data.data.data.data;
 };
 
 export const deleteItem = async (id: number): Promise<void> => {

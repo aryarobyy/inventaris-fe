@@ -2,12 +2,15 @@ import { ADMINKEY } from "../core/contants";
 import { getLocalData } from "../libs/localData";
 import { Role } from "../models/enums";
 import AddItem from "../views/admin/AddItem.vue";
+import ApproveAdmin from "../views/admin/ApproveAdmin.vue";
 import Dashboard from "../views/admin/Dashboard.vue";
 import Login from "../views/admin/Login.vue";
+import NotApproved from "../views/admin/NotApproved.vue";
 import Register from "../views/admin/Register.vue";
 import Booking from "../views/booking/Booking.vue";
 import ReqBooking from "../views/booking/ReqBooking.vue";
 import Home from "../views/home/Home.vue";
+import Item from "../views/item/Item.vue";
 import Loan from "../views/loan/Loan.vue";
 import LoanItem from "../views/loan/LoanItem.vue";
 import UserLogin from "../views/user/UserLogin.vue";
@@ -72,7 +75,7 @@ const routes = [
       {
         path: "",
         name: "ItemList",
-        // component
+        component: Item,
       }
     ]
   },
@@ -103,24 +106,51 @@ const routes = [
   },
 ];
 
-if(admin) {
-  routes.push({
-    path: "/admin",
-    children: [
+if (admin?.data) {
+  const role = admin.data.role;
+  console.log("Admin role:", role);
+
+  if (role === Role.PENDING) {
+    routes.push({
+      path: "/admin/not-approved",
+      name: "AdminNotApproved",
+      component: NotApproved,
+    });
+    
+    routes.push({
+      path: "/admin/:pathMatch(.*)*",
+      name: "AdminCatchAll",
+      component: NotApproved
+    });
+  } else {
+    const adminChildren = [
       {
         path: "",
         name: "AdminDashboard",
         component: Dashboard,
       },
-      {
+    ];
+
+    if (role === Role.SUPER_ADMIN) {
+      adminChildren.push({
+        path: "approve",
+        name: "AdminApprove",
+        component: ApproveAdmin,
+      });
+    } 
+    if (role === "admin" || role === Role.SUPER_ADMIN) {
+      adminChildren.push({
         path: "add",
         name: "AdminAddItem",
         component: AddItem,
-        // meta: {requiresAdmin : true}
-      }
-    ]
-  })
-}
+      });
+    }
 
+    routes.push({
+      path: "/admin",
+      children: adminChildren,
+    });
+  }
+}
 
 export default routes;
