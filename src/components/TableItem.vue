@@ -1,6 +1,6 @@
 <template>
-  <div class="p-6 bg-gray-50 min-h-screen">
-    <div class="bg-white rounded-lg shadow-sm p-6">
+  <div class="p-6 bg-primary min-h-screen">
+    <div class="bg-second rounded-lg shadow-sm p-6">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800 mb-4">Manajemen Item</h1>
         <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -46,7 +46,7 @@
 
       <div v-else>
         <!-- Mobile View -->
-        <div class="block sm:hidden space-y-3">
+        <div class="bg-tertiary block sm:hidden space-y-3">
           <div v-for="(item, itemIndex) in filteredItems" :key="item.id" class="bg-white rounded-lg shadow p-4 border border-gray-200">
             <div class="flex justify-between items-start mb-3">
               <div>
@@ -91,36 +91,36 @@
               v-if="canShowActionButtons(item)" 
               class="flex justify-center space-x-2 pt-2 border-t border-gray-200"
             >
-              <button 
-                @click="updateItemAvailability(item, ItemAvailability.AVAILABLE)"
-                class="flex-1 inline-flex items-center justify-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                :disabled="item.availabilityStatus === ItemAvailability.AVAILABLE || updatingItemIds.has(item.id)"
-              >
-                <div v-if="updatingItemIds.has(item.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
-                <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                {{ updatingItemIds.has(item.id) ? 'Memproses...' : 'Tersedia' }}
-              </button>
-              <button 
-                @click="updateItemAvailability(item, ItemAvailability.MAINTENANCE)"
-                class="flex-1 inline-flex items-center justify-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                :disabled="item.availabilityStatus === ItemAvailability.MAINTENANCE || updatingItemIds.has(item.id)"
-              >
-                <div v-if="updatingItemIds.has(item.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
-                <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                {{ updatingItemIds.has(item.id) ? 'Memproses...' : 'Maintenance' }}
-              </button>
+              <Button
+              :text="updatingItemIds.has(item.id) ? 'Memproses...' : 'Tersedia'"
+              :loading="updatingItemIds.has(item.id)"
+              :icon="Check"
+              icon-position="left"
+              :disabled="item.availabilityStatus === ItemAvailability.AVAILABLE || updatingItemIds.has(item.id)"
+              size="small"
+              variant="accept"
+              class="flex-1"
+              @click="updateItemAvailability(item, ItemAvailability.AVAILABLE)"
+              />
+
+              <Button
+              :text="updatingItemIds.has(item.id) ? 'Memproses...' : 'Maintenance'"
+              :loading="updatingItemIds.has(item.id)"
+              :icon="Settings"
+              icon-position="left"
+              :disabled="item.availabilityStatus === ItemAvailability.MAINTENANCE || updatingItemIds.has(item.id)"
+              size="small"
+              variant="reject"
+              class="flex-1"
+              @click="updateItemAvailability(item, ItemAvailability.MAINTENANCE)"
+              />
             </div>
           </div>
         </div>
 
         <!-- Desktop View -->
         <div class="hidden sm:block">
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="bg-tertiary rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto">
               <table class="min-w-full">
                 <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
@@ -193,27 +193,29 @@
                         v-if="canShowActionButtons(item)"
                         class="flex justify-center space-x-2"
                       >
-                        <button 
-                          @click="updateItemAvailability(item, ItemAvailability.AVAILABLE)"
-                          class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          :disabled="item.availabilityStatus === ItemAvailability.AVAILABLE || updatingItemIds.has(item.id)"
-                        >
-                          <div v-if="updatingItemIds.has(item.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
-                          <Check v-else class="w-3 h-3 mr-1" />
-                          {{ updatingItemIds.has(item.id) ? 'Memproses...' : 'Tersedia' }}
-                        </button>
-                        <button 
-                          @click="updateItemAvailability(item, ItemAvailability.MAINTENANCE)"
-                          class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          :disabled="item.availabilityStatus === ItemAvailability.MAINTENANCE || updatingItemIds.has(item.id)"
-                        >
-                          <div v-if="updatingItemIds.has(item.id)" class="w-3 h-3 mr-1 border border-white border-t-transparent rounded-full animate-spin"></div>
-                          <svg v-else class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          </svg>
-                          {{ updatingItemIds.has(item.id) ? 'Memproses...' : 'Maintenance' }}
-                        </button>
+                      <Button
+                      :text="updatingItemIds.has(item.id) ? 'Memproses...' : 'Tersedia'"
+                      :loading="updatingItemIds.has(item.id)"
+                      :icon="Check"
+                      icon-position="left"
+                      :disabled="item.availabilityStatus === ItemAvailability.AVAILABLE || updatingItemIds.has(item.id)"
+                      size="small"
+                      variant="accept"
+                      class="flex-1"
+                      @click="updateItemAvailability(item, ItemAvailability.AVAILABLE)"
+                      />
+
+                      <Button
+                      :text="updatingItemIds.has(item.id) ? 'Memproses...' : 'Maintenance'"
+                      :loading="updatingItemIds.has(item.id)"
+                      :icon="Settings"
+                      icon-position="left"
+                      :disabled="item.availabilityStatus === ItemAvailability.MAINTENANCE || updatingItemIds.has(item.id)"
+                      size="small"
+                      variant="reject"
+                      class="flex-1"
+                      @click="updateItemAvailability(item, ItemAvailability.MAINTENANCE)"
+                      />
                       </div>
                       <div v-else class="text-sm text-gray-400">-</div>
                     </td>
@@ -268,9 +270,10 @@
 <script lang="ts" setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import type { ItemModel } from '../models/item.model'
-import { Check, X } from 'lucide-vue-next'
+import { Check, Settings, X } from 'lucide-vue-next'
 import { ItemAvailability, ItemCondition } from '../models/enums'
 import { getItems, updateItem } from '../provider/item.provider'
+import Button from './Button.vue'
 
 interface Props {
   showAction?: boolean

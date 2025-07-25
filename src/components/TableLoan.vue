@@ -1,13 +1,13 @@
 <template>
-  <div class="p-6 bg-gray-50 min-h-screen">
-    <div class="bg-white rounded-lg shadow-sm p-6">
+  <div class="p-6 bg-primary min-h-screen">
+    <div class="bg-second rounded-lg shadow-sm p-6">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800 mb-4">Manajemen Admin</h1>
-        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Manajemen Peminjaman</h1>
+        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between ">
           <div class="relative flex-1 max-w-md">
             <input 
               v-model="search" 
-              placeholder="Cari username atau nama admin..." 
+              placeholder="Cari barang atau peminjam..." 
               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             />
             <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,7 +19,7 @@
               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             >
               <option 
-                v-for="option in adminStatusOptions" 
+                v-for="option in loanStatusOptions" 
                 :key="option.value" 
                 :value="option.value"
               >
@@ -47,62 +47,64 @@
       <div v-else>
         <!-- Mobile View -->
         <div class="bg-tertiary block sm:hidden space-y-3">
-          <div v-for="(admin, adminIndex) in filteredAdmins" :key="admin.id" class="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <div v-for="(loan, loanIndex) in filteredLoansAlternative" :key="loan.id" class="bg-white rounded-lg shadow p-4 border border-gray-200">
             <div class="flex justify-between items-start mb-3">
               <div>
                 <div class="flex items-center mb-1">
                   <div class="flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs font-medium mr-2">
-                    {{ adminIndex + 1 }}
+                    {{ loanIndex + 1 }}
                   </div>
-                  <p class="text-sm text-gray-600">ID: {{ admin.id }}</p>
+                  <p class="text-sm text-gray-600">ID: {{ loan.id }}</p>
                 </div>
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-6 w-6 mr-2">
                     <div class="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span class="text-xs font-medium text-gray-700">{{ getInitials(admin.name) }}</span>
+                      <span class="text-xs font-medium text-gray-700">{{ getInitials(loan.borrower.name) }}</span>
                     </div>
                   </div>
-                  <p class="font-semibold text-gray-900">{{ admin.name }}</p>
+                  <p class="font-semibold text-gray-900">{{ loan.borrower.name }}</p>
                 </div>
               </div>
-              <span :class="[statusClass(admin.status)]">{{ getStatusText(admin.status) }}</span>
+              <span :class="[statusClass(loan.loanStatus)]">{{ getStatusText(loan.loanStatus) }}</span>
             </div>
             
             <div class="mb-3">
-              <p class="text-sm text-gray-600 mb-1">Username: <span class="font-medium">{{ admin.username }}</span></p>
-              <p class="text-sm text-gray-600">Role: <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{{ admin.role }}</span></p>
+              <p class="text-sm text-gray-600 mb-2">Barang:</p>
+              <div class="space-y-1">
+                <div v-for="item in loan.loanItems" :key="item.item.id" class="flex justify-between items-center">
+                  <span class="text-sm text-gray-700">• {{ item.item.name }}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {{ item.borrowedQuantity }}
+                  </span>
+                </div>
+              </div>
             </div>
             
             <div class="flex justify-between text-sm text-gray-600 mb-3">
-              <p>Dibuat: {{ formatDate(admin.createdAt) }}</p>
-              <p>Update: {{ formatDate(admin.updatedAt) }}</p>
+              <p>Pinjam: {{ formatDate(loan.loanDate) }}</p>
+              <p>Tempo: {{ formatDate(loan.dueDate) }}</p>
             </div>
             
-            <div 
-              v-if="canShowStatusButtons(admin)" 
-              class="flex justify-center space-x-2 pt-2 border-t border-gray-200"
-            >
+            <div v-if="loan.loanStatus === LoanStatus.PENDING && props.showAction" class="flex justify-center space-x-2 pt-2 border-t border-gray-200">
               <Button
-                :text="updatingAdminIds.has(admin.id) ? 'Memproses...' : 'Aktifkan'"
-                :loading="updatingAdminIds.has(admin.id)"
+                :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Setujui'"
+                :loading="updatingLoanIds.has(loan.id)"
                 :icon="Check"
                 icon-position="left"
-                :disabled="admin.status === true || updatingAdminIds.has(admin.id)"
+                :disabled="updatingLoanIds.has(loan.id)"
                 size="small"
                 variant="accept"
-                @click="updateAdminStatus(admin, true)"
-                class="flex-1"
+                @click="updateLoanStatus(loan, LoanStatus.APPROVED)"
               />
               <Button
-                :text="updatingAdminIds.has(admin.id) ? 'Memproses...' : 'Nonaktifkan'"
-                :loading="updatingAdminIds.has(admin.id)"
+                :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Tolak'"
+                :loading="updatingLoanIds.has(loan.id)"
                 :icon="X"
                 icon-position="left"
-                :disabled="admin.status === false || updatingAdminIds.has(admin.id)"
+                :disabled="updatingLoanIds.has(loan.id)"
                 size="small"
-                variant="reject"
-                @click="updateAdminStatus(admin, false)"
-                class="flex-1"
+                variant="custom"
+                @click="updateLoanStatus(loan, LoanStatus.CANCELLED)"
               />
             </div>
           </div>
@@ -110,85 +112,83 @@
 
         <!-- Desktop View -->
         <div class="hidden sm:block">
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="bg-tertiary rounded-lg shadow overflow-hidden ">
             <div class="overflow-x-auto">
               <table class="min-w-full">
                 <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                   <tr>
                     <th class="p-3 text-left whitespace-nowrap">No</th>
                     <th class="p-3 text-left whitespace-nowrap">ID</th>
-                    <th class="p-3 text-left whitespace-nowrap">Admin</th>
-                    <th class="p-3 text-left whitespace-nowrap">Username</th>
-                    <th class="p-3 text-left whitespace-nowrap">Role</th>
-                    <th class="p-3 text-left whitespace-nowrap">Tgl Dibuat</th>
-                    <th class="p-3 text-left whitespace-nowrap">Tgl Update</th>
+                    <th class="p-3 text-left whitespace-nowrap">Peminjam</th>
+                    <th class="p-3 text-left whitespace-nowrap">Barang</th>
+                    <th class="p-3 text-left whitespace-nowrap">Tgl Pinjam</th>
+                    <th class="p-3 text-left whitespace-nowrap">Tgl Tempo</th>
                     <th class="p-3 text-center whitespace-nowrap">Status</th>
-                    <th 
-                      v-if="shouldShowActionColumn"
-                      class="p-3 text-center whitespace-nowrap"
-                    >
-                      Aksi
-                    </th>
+                    <th
+                    v-if="props.showAction"
+                    class="p-3 text-center whitespace-nowrap">Aksi</th>
                   </tr>
                 </thead>
                 <tbody class="text-gray-700 text-sm divide-y divide-gray-200">
-                  <tr v-for="(admin, adminIndex) in filteredAdmins" :key="admin.id" class="hover:bg-gray-50 transition-colors">
+                  <tr v-for="(loan, loanIndex) in filteredLoansAlternative" :key="loan.id" class="hover:bg-gray-50 transition-colors">
                     <td class="p-3 whitespace-nowrap">
                       <div class="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                        {{ adminIndex + 1 }}
+                        {{ loanIndex + 1 }}
                       </div>
                     </td>
-                    <td class="p-3 whitespace-nowrap font-medium">{{ admin.id }}</td>
+                    <td class="p-3 whitespace-nowrap font-medium">{{ loan.id }}</td>
                     <td class="p-3 whitespace-nowrap">
                       <div class="flex items-center">
                         <div class="flex-shrink-0 h-8 w-8">
                           <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span class="text-sm font-medium text-gray-700">{{ getInitials(admin.name) }}</span>
+                            <span class="text-sm font-medium text-gray-700">{{ getInitials(loan.borrower.name) }}</span>
                           </div>
                         </div>
                         <div class="ml-3">
-                          <div class="text-sm font-medium text-gray-900">{{ admin.name }}</div>
+                          <div class="text-sm font-medium text-gray-900">{{ loan.borrower.name }}</div>
                         </div>
                       </div>
                     </td>
-                    <td class="p-3 whitespace-nowrap">{{ admin.username }}</td>
-                    <td class="p-3 whitespace-nowrap">
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {{ admin.role }}
-                      </span>
+                    <td class="p-3">
+                      <div class="space-y-1">
+                        <div v-for="item in loan.loanItems" :key="item.item.id" class="flex justify-between items-center">
+                          <span class="text-sm">• {{ item.item.name }}</span>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
+                            {{ item.borrowedQuantity }}
+                          </span>
+                        </div>
+                      </div>
                     </td>
-                    <td class="p-3 whitespace-nowrap">{{ formatDate(admin.createdAt) }}</td>
-                    <td class="p-3 whitespace-nowrap">{{ formatDate(admin.updatedAt) }}</td>
+                    <td class="p-3 whitespace-nowrap">{{ formatDate(loan.loanDate) }}</td>
+                    <td class="p-3 whitespace-nowrap">{{ formatDate(loan.dueDate) }}</td>
                     <td class="p-3 whitespace-nowrap text-center">
-                      <span :class="[statusClass(admin.status)]">{{ getStatusText(admin.status) }}</span>
+                      <span :class="[statusClass(loan.loanStatus)]">{{ getStatusText(loan.loanStatus) }}</span>
                     </td>
-                    <td v-if="shouldShowActionColumn" class="p-3 whitespace-nowrap text-center">
+                    <td class="p-3 whitespace-nowrap text-center">
                       <div 
-                        v-if="canShowStatusButtons(admin)"
-                        class="flex justify-center space-x-2"
-                      >
+                      v-if="props.showAction"
+                      class="flex justify-center space-x-2">
                         <Button
-                          :text="updatingAdminIds.has(admin.id) ? 'Memproses...' : 'Aktifkan'"
-                          :loading="updatingAdminIds.has(admin.id)"
+                          :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Setujui'"
+                          :loading="updatingLoanIds.has(loan.id)"
                           :icon="Check"
                           icon-position="left"
-                          :disabled="admin.status === true || updatingAdminIds.has(admin.id)"
+                          :disabled="updatingLoanIds.has(loan.id)"
                           size="small"
                           variant="accept"
-                          @click="updateAdminStatus(admin, true)"
+                          @click="updateLoanStatus(loan, LoanStatus.APPROVED)"
                         />
                         <Button
-                          :text="updatingAdminIds.has(admin.id) ? 'Memproses...' : 'Nonaktifkan'"
-                          :loading="updatingAdminIds.has(admin.id)"
+                          :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Tolak'"
+                          :loading="updatingLoanIds.has(loan.id)"
                           :icon="X"
                           icon-position="left"
-                          :disabled="admin.status === false || updatingAdminIds.has(admin.id)"
+                          :disabled="updatingLoanIds.has(loan.id)"
                           size="small"
-                          variant="reject"
-                          @click="updateAdminStatus(admin, false)"
+                          variant="custom"
+                          @click="updateLoanStatus(loan, LoanStatus.CANCELLED)"
                         />
                       </div>
-                      <div v-else class="text-sm text-gray-400">-</div>
                     </td>
                   </tr>
                 </tbody>
@@ -198,20 +198,20 @@
         </div>
 
         <!-- Empty state -->
-        <div v-if="filteredAdmins.length === 0" class="text-center py-12">
+        <div v-if="filteredLoansAlternative.length === 0" class="text-center py-12">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.712-3.714M14 40v-4c0-1.313.253-2.6.712-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.814 2.602 9.288 6.286" />
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data admin</h3>
-          <p class="mt-1 text-sm text-gray-500">Tidak ada admin yang sesuai dengan kriteria pencarian.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data peminjaman</h3>
+          <p class="mt-1 text-sm text-gray-500">Tidak ada peminjaman yang sesuai dengan kriteria pencarian.</p>
         </div>
       </div>
     </div>
 
     <!-- Success/Error Toast Notifications -->
     <div v-if="notification.show" 
-        class="fixed bottom-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border border-gray-200 transform transition-all duration-300 ease-in-out"
-        :class="notification.type === 'success' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'">
+         class="fixed bottom-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border border-gray-200 transform transition-all duration-300 ease-in-out"
+         :class="notification.type === 'success' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'">
       <div class="p-4">
         <div class="flex items-start">
           <div class="flex-shrink-0">
@@ -240,32 +240,34 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, reactive, watchEffect, onMounted } from 'vue'
-import type { AdminModel } from '../models/admin.model'
-import { getAdmins, updateAdmin } from '../provider/admin.provider'
+import { ref, computed, reactive, watchEffect } from 'vue'
+import type { LoanModel } from '../models/loan.model'
+import { updateLoan } from '../provider/loan.provider'
+import { LoanStatus } from '../models/enums'
+import useGetLoans from '../hooks/useGetLoans'
 import { Check, X } from 'lucide-vue-next'
 import Button from './Button.vue'
 
 interface Props {
-  showAction?: boolean
-  isLoading?: boolean
-  error?: string | null
-  currentUserRole?: string 
+  showAction?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showAction: true,
-  isLoading: false,
-  error: null,
-  currentUserRole: 'super_admin'
+  showAction: false,
 })
 
+const { loans, isLoading, error } = useGetLoans()
 const emit = defineEmits<{
-  adminUpdated: [admin: AdminModel]
+  loanUpdated: [loan: LoanModel]
 }>()
 
-const localAdmins = ref<AdminModel[]>([])
-const updatingAdminIds = ref(new Set<number>())
+const localLoans = ref<LoanModel[]>([])
+
+watchEffect(() => {
+  localLoans.value = [...loans.value]
+})
+
+const updatingLoanIds = ref(new Set<number>())
 
 const notification = reactive({
   show: false,
@@ -277,71 +279,38 @@ const notification = reactive({
 const search = ref('')
 const filterStatus = ref('')
 
-onMounted(async () => {
-  try {
-    const data = await getAdmins()
-    localAdmins.value = data
-  } catch (error) {
-    console.error('Error loading admins:', error)
-  }
-})
-
-const filteredAdmins = computed(() => {
+const filteredLoansAlternative = computed(() => {
   if (!search.value && !filterStatus.value) {
-    return localAdmins.value
+    return localLoans.value;
   }
 
-  return localAdmins.value.filter((admin) => {
-    const searchTerm = search.value.toLowerCase().trim()
+  return localLoans.value.filter((loan) => {
+    const searchTerm = search.value.toLowerCase().trim();
     
     const searchMatch = !searchTerm || 
-      admin.name?.toLowerCase().includes(searchTerm) ||
-      admin.username?.toLowerCase().includes(searchTerm)
+      loan.borrower.name?.toLowerCase().includes(searchTerm) ||
+      loan.loanItems.some(loanItem => 
+        loanItem.item.name.toLowerCase().includes(searchTerm)
+      );
     
-    let statusMatch = true
-    if (filterStatus.value) {
-      if (filterStatus.value === 'active') {
-        statusMatch = admin.status === true
-      } else if (filterStatus.value === 'inactive') {
-        statusMatch = admin.status === false
-      } else {
-        statusMatch = admin.role === filterStatus.value
-      }
-    }
+    const statusMatch = !filterStatus.value || loan.loanStatus === filterStatus.value;
     
-    return searchMatch && statusMatch
-  })
-})
-
-const isSuperAdmin = computed(() => {
-  return props.currentUserRole === 'super_admin'
-})
-
-const shouldShowActionColumn = computed(() => {
-  return props.showAction && isSuperAdmin.value && 
-    localAdmins.value.some(admin => canShowStatusButtons(admin))
-})
-
-const canShowStatusButtons = (admin: AdminModel): boolean => {
-  if (!isSuperAdmin.value || !props.showAction) {
-    return false
-  }
-  
-  return admin.role === 'pending' || admin.role === 'admin'
-}
+    return searchMatch && statusMatch;
+  });
+});
 
 const getInitials = (name: string) => {
-  if (!name) return ''
+  if (!name) return '';
   return name
     .split(' ')
     .map(word => word.charAt(0))
     .join('')
     .toUpperCase()
-    .slice(0, 2)
-}
+    .slice(0, 2);
+};
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
+  if (!dateString) return '-';
   const date = new Date(dateString)
   return date.toLocaleDateString('id-ID', {
     year: 'numeric',
@@ -350,22 +319,40 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const adminStatusOptions = [
+const loanStatusOptions = [
   { value: '', label: 'Semua Status' },
-  { value: 'active', label: 'Status Aktif' },
-  { value: 'inactive', label: 'Status Nonaktif' },
-]
+  { value: LoanStatus.PENDING, label: 'Pending' },
+  { value: LoanStatus.ACTIVE, label: 'Aktif' },
+  { value: LoanStatus.APPROVED, label: 'Disetujui' },
+  { value: LoanStatus.RETURNED, label: 'Dikembalikan' },
+  { value: LoanStatus.OVERDUE, label: 'Terlambat' },
+  { value: LoanStatus.CANCELLED, label: 'Ditolak' },
+];
 
-const getStatusText = (status: boolean) => {
-  return status ? 'Aktif' : 'Nonaktif'
+const getStatusText = (status: LoanStatus) => {
+  switch (status) {
+    case LoanStatus.PENDING:
+      return 'Pending'
+    case LoanStatus.APPROVED:
+      return 'Disetujui'
+    case LoanStatus.CANCELLED:
+      return 'Ditolak'
+    default:
+      return status
+  }
 }
 
-const statusClass = (status: boolean) => {
-  const baseClass = 'inline-flex px-2 py-1 text-xs font-semibold rounded-full'
-  if (status) {
-    return `${baseClass} bg-green-100 text-green-800`
-  } else {
-    return `${baseClass} bg-red-100 text-red-800`
+const statusClass = (status: LoanStatus) => {
+  const baseClass = 'inline-flex px-2 py-1 text-xs font-semibold rounded-full';
+  switch (status) {
+    case LoanStatus.PENDING:
+      return `${baseClass} bg-yellow-100 text-yellow-800`;
+    case LoanStatus.APPROVED:
+      return `${baseClass} bg-green-100 text-green-800`;
+    case LoanStatus.CANCELLED:
+      return `${baseClass} bg-red-100 text-red-800`;
+    default:
+      return `${baseClass} bg-gray-100 text-gray-800`;
   }
 }
 
@@ -384,44 +371,43 @@ const hideNotification = () => {
   notification.show = false
 }
 
-const updateAdminStatus = async (admin: AdminModel, newStatus: boolean) => {
-  updatingAdminIds.value.add(admin.id)
+const updateLoanStatus = async (loan: LoanModel, newStatus: LoanStatus) => {
+  updatingLoanIds.value.add(loan.id)
   
   try {
-    const updatedAdminData = await updateAdmin(admin.id, {
-      role: 'admin',
-      status: newStatus
+    const updatedLoanData = await updateLoan(loan.id, {
+      loanStatus: newStatus
     })
     
-    const adminIndex = localAdmins.value.findIndex(a => a.id === admin.id)
-    if (adminIndex !== -1) {
-      localAdmins.value[adminIndex] = {
-        ...localAdmins.value[adminIndex],
-        status: newStatus
+    const loanIndex = localLoans.value.findIndex(l => l.id === loan.id)
+    if (loanIndex !== -1) {
+      localLoans.value[loanIndex] = {
+        ...localLoans.value[loanIndex],
+        loanStatus: newStatus
       }
     }
     
-    emit('adminUpdated', localAdmins.value[adminIndex])
+    emit('loanUpdated', localLoans.value[loanIndex])
     
-    const statusText = newStatus ? 'diaktifkan' : 'dinonaktifkan'
+    const statusText = newStatus === LoanStatus.APPROVED ? 'disetujui' : 'ditolak'
     showNotification(
       'success',
       'Berhasil!',
-      `Admin ${admin.name} berhasil ${statusText}.`
+      `Peminjaman ${loan.borrower.name} berhasil ${statusText}.`
     )
     
-    console.log(`Updated admin ${admin.id} to ${newStatus}`, updatedAdminData)
+    console.log(`Updated loan ${loan.id} to ${newStatus}`, updatedLoanData)
     
   } catch (error: any) {
-    console.error('Error updating admin status:', error)
+    console.error('Error updating loan status:', error)
     
     showNotification(
       'error',
       'Gagal!',
-      'Terjadi kesalahan saat memperbarui status admin.'
+      'Terjadi kesalahan saat memperbarui status peminjaman.'
     )
   } finally {
-    updatingAdminIds.value.delete(admin.id)
+    updatingLoanIds.value.delete(loan.id)
   }
 }
 </script>
