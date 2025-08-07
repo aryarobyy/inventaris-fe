@@ -1,8 +1,7 @@
 <template>
   <div class="flex">
-    <div class="flex-1 min-h-screen bg-gray-50">
+    <div class="flex-1 min-h-screen">
       <div class="p-3 sm:p-6 space-y-6">
-        <!-- Ringkasan -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="bg-white p-3 sm:p-6 rounded-lg shadow hover:shadow-md transition">
             <p class="text-gray-600 text-sm sm:text-base">Total Peminjaman</p>
@@ -18,9 +17,8 @@
           </div>
         </div>
 
-        <!-- Tombol Cepat -->
         <div>
-          <h4 class="text-lg sm:text-xl font-semibold mb-4">Tindakan Cepat</h4>
+          <h4 class="text-lg sm:text-xl font-semibold mb-4"> </h4>
           <div class="flex gap-1 sm:gap-4 flex-wrap">
             <button 
               class="bg-blue-600 text-white px-3 sm:px-6 py-2 rounded hover:bg-blue-700 text-sm sm:text-base"
@@ -44,8 +42,8 @@
 
         <div>
           <h4 class="text-lg sm:text-xl font-semibold mb-4">Peminjaman Terbaru</h4>
-          <Table 
-            :showAction="true"
+          <TableLoan 
+            :showAction="false"
             :loans="loans"
             :isLoading="isLoading"
             :error="error"
@@ -60,9 +58,8 @@
 
 <script setup lang="ts">
 import { computed } from '@vue/reactivity';
-import Table from '../../components/Table.vue';
+import TableLoan from '../../components/TableLoan.vue';
 import useGetLoans from '../../hooks/useGetLoans';
-import { LoanStatus } from '../../models/enums';
 
 const total = computed(() => loans.value.length);
 const pending = computed(() => loans.value.filter((l) => l.loanStatus === 'pending').length);

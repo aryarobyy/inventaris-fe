@@ -26,8 +26,8 @@
           
           <div>
             <div class="flex items-center justify-between mb-3">
-              <h4 class="text-sm font-medium">Selected Items</h4>
-              <span class="text-xs text-gray-500">{{ allSelectedItems.length }} items selected</span>
+              <h4 class="text-sm font-medium">Item Terpilih</h4>
+              <span class="text-xs text-gray-500">{{ allSelectedItems.length }} items</span>
             </div>
             
             <div v-if="allSelectedItems.length > 0" class="mb-4 p-3 bg-gray-50 rounded border max-h-60 overflow-y-auto">
@@ -36,14 +36,23 @@
                   <span class="font-medium">{{ item.name }}</span>
                   <span v-if="item.brand" class="text-gray-500"> - {{ item.brand }}</span>
                   <div class="text-xs text-gray-400">{{ getCategoryLabel(item.category) }}</div>
+                  <div class="text-xs text-blue-600">Available Stock: {{ getAvailableStock(item) }}</div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <Input
-                    :modelValue="String(item.quantity)"
-                    @update:modelValue="val => updateItemQuantity(item.id, val)"
-                    type="number"
-                    placeHolder="Qty"
-                  />
+                  <div class="flex flex-col">
+                    <Input
+                      :modelValue="String(item.quantity)"
+                      @update:modelValue="val => updateItemQuantity(item.id, val)"
+                      type="number"
+                      :min="1"
+                      :max="item.originalStock"
+                      placeHolder="Qty"
+                      :class="getQuantityInputClass(item)"
+                    />
+                    <span v-if="item.quantity > item.originalStock" class="text-xs text-red-500 mt-1">
+                      Melampaui stock
+                    </span>
+                  </div>
                   <Button
                     type="button"
                     text="×"
@@ -59,11 +68,11 @@
               <h5 class="text-sm font-medium mb-3">Item Yang dipinjam</h5>
               
               <div class="mb-3">
-                <label class="block text-sm font-medium mb-1">Select Category</label>
+                <label class="block text-sm font-medium mb-1">Pilih Kategori</label>
                 <Dropdown
                   v-model="selectedCategory"
                   :options="categoryOptions"
-                  placeHolder="Choose category"
+                  placeHolder="Pilih Kategori"
                   valueKey="value"
                   labelKey="label"
                 />
@@ -89,14 +98,15 @@
                       <div class="flex-1">
                         <span class="font-medium">{{ item.name }}</span>
                         <span v-if="item.brand" class="text-gray-500"> - {{ item.brand }}</span>
-                        <div class="text-xs text-gray-400">Stock: {{ item.borrowedQuantity }}</div>
+                        <div class="text-xs text-gray-400">Stock: {{ item.stock }}</div>
+                        <div v-if="item.stock === 0" class="text-xs text-red-500">Out of Stock</div>
                       </div>
                       <Button
                         type="button"
-                        :text="isItemAlreadySelected(item.id) ? 'Added' : 'Add'"
+                        :text="getAddButtonText(item)"
                         @click="addItemToSelection(item)"
-                        :disabled="isItemAlreadySelected(item.id)"
-                        :class="isItemAlreadySelected(item.id) ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'"
+                        :disabled="isItemAddDisabled(item)"
+                        :class="getAddButtonClass(item)"
                         class="text-white px-3 py-1 rounded text-sm"
                       />
                     </div>
@@ -105,6 +115,10 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div v-if="hasStockValidationErrors" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <p class="text-sm">⚠️ Beberapa item melebihi stok yang tersedia. Silakan kurangi jumlah peminjaman.</p>
         </div>
 
         <div class="mt-6 flex gap-3">
@@ -127,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 import DateInput from '../../components/DateInput.vue'
 import Button from '../../components/Button.vue'
 import Dropdown from '../../components/Dropdown.vue'
@@ -137,27 +151,34 @@ import { ItemCategory, LoanStatus } from '../../models/enums'
 import type { ItemModel } from '../../models/item.model'
 import type { PostLoanModel } from '../../models/loan.model'
 import { postLoan } from '../../provider/loan.provider'
-import { postUser } from '../../provider/user.provider'
+import { getUserByIdentity, postUser } from '../../provider/user.provider'
 import { postLocalItem, removeLocalItem } from '../../libs/itemData'
 import { getLocalData } from '../../libs/localData'
-import { USERKEY } from '../../core/contants'
-import type { UserModel } from '../../models/user.model'
+import { ADMINKEY, USERKEY } from '../../core/contants'
+import type { PostUserModel, UserModel } from '../../models/user.model'
 import router from '../../router'
+import type { AdminModel } from '../../models/admin.model'
+
+interface Props {
+  admin: AdminModel | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {})
 
 const loanDate = ref<string>('')
 const dueDate = ref<string>('')
 
 const getUserData = (): UserModel | null => {
   try {
-    const userData = getLocalData(USERKEY)
+    const userData: UserModel = getLocalData(USERKEY)
     console.log('Raw user data from localStorage:', userData)
     
-    if (!userData || !userData.data) {
+    if (!userData || !userData) {
       console.warn('No user data found in localStorage')
       return null
     }
     
-    const user = userData.data
+    const user = userData
     console.log('Parsed user data:', user)
     
     return user
@@ -177,7 +198,7 @@ const selectedCategory = ref<{ label: string; value: ItemCategory | null }>({
 const items = ref<ItemModel[]>([])
 const isLoadingItems = ref(false)
 
-const allSelectedItems = ref<(ItemModel & { quantity: number })[]>([])
+const allSelectedItems = ref<(ItemModel & { quantity: number; originalStock: number })[]>([])
 
 const categoryOptions = Object.entries(ItemCategory).map(([key, value]) => ({
   label: key.replace(/_/g, ' ').toUpperCase(),
@@ -210,11 +231,40 @@ const isItemAlreadySelected = (itemId: number) => {
   return allSelectedItems.value.some(item => item.id === itemId)
 }
 
+const isItemAddDisabled = (item: ItemModel) => {
+  return isItemAlreadySelected(item.id) || item.stock === 0
+}
+
+const getAddButtonText = (item: ItemModel) => {
+  if (item.stock === 0) return 'Out of Stock'
+  if (isItemAlreadySelected(item.id)) return 'Added'
+  return 'Add'
+}
+
+const getAddButtonClass = (item: ItemModel) => {
+  if (item.stock === 0) return 'bg-gray-400 cursor-not-allowed'
+  if (isItemAlreadySelected(item.id)) return 'bg-gray-300 cursor-not-allowed'
+  return 'bg-green-500 hover:bg-green-600'
+}
+
+const getAvailableStock = (item: ItemModel & { quantity: number; originalStock: number }) => {
+  return Math.max(0, item.originalStock - item.quantity)
+}
+
+const getQuantityInputClass = (item: ItemModel & { quantity: number; originalStock: number }) => {
+  return item.quantity > item.originalStock ? 'border-red-500 bg-red-50' : ''
+}
+
+const hasStockValidationErrors = computed(() => {
+  return allSelectedItems.value.some(item => item.quantity > item.originalStock)
+})
+
 const addItemToSelection = (item: ItemModel) => {
-  if (!isItemAlreadySelected(item.id)) {
+  if (!isItemAlreadySelected(item.id) && item.stock > 0) {
     allSelectedItems.value.push({
       ...item,
-      quantity: 1
+      quantity: 1,
+      originalStock: item.stock
     })
     
     postLocalItem(allSelectedItems.value)
@@ -234,18 +284,22 @@ const updateItemQuantity = (itemId: number, value: string) => {
   const item = allSelectedItems.value.find(item => item.id === itemId)
   if (item) {
     const quantity = parseInt(value) || 1
-    item.quantity = Math.max(1, quantity) 
+    item.quantity = Math.max(1, quantity)
 
-    postLocalItem(allSelectedItems.value,)
+    postLocalItem(allSelectedItems.value)
   }
 }
 
 const isFormValid = computed(() => {
   return loanDate.value && 
-         dueDate.value && 
-         user.value !== null && 
-         allSelectedItems.value.length > 0 &&
-         allSelectedItems.value.every(item => item.quantity && item.quantity > 0)
+    dueDate.value && 
+    user.value !== null && 
+    allSelectedItems.value.length > 0 &&
+    allSelectedItems.value.every(item => 
+      item.quantity && 
+      item.quantity > 0 && 
+      item.quantity <= item.originalStock
+    )
 })
 
 const handleSubmit = async () => {
@@ -262,20 +316,30 @@ const handleSubmit = async () => {
   }
 
   const hasInvalidQuantities = allSelectedItems.value.some(item => 
-    !item.quantity || item.quantity <= 0
+    !item.quantity || item.quantity <= 0 || item.quantity > item.originalStock
   )
 
   if (hasInvalidQuantities) {
-    console.warn('Semua item harus memiliki quantity yang valid')
-    alert('Semua item harus memiliki quantity yang valid')
+    console.warn('Beberapa item memiliki quantity yang tidak valid atau melebihi stok')
+    alert('Semua item harus memiliki quantity yang valid dan tidak melebihi stok yang tersedia')
     return
   }
 
   try {
-    const createdUser = await postUser(user.value)
+    let existingUser = await getUserByIdentity(user.value.identityNumber);
+        
+    let finalUser: UserModel;
+    if (existingUser && existingUser.identityNumber) {
+        console.log('User already exists:', existingUser)
+        finalUser = existingUser;
+    } else {
+        console.log('Creating new user...')
+        finalUser = await postUser(user.value);
+        console.log('User created successfully:', finalUser)
+    }
 
     const formData: PostLoanModel = {
-      borrowerId: createdUser.id,
+      borrowerId: finalUser.id,
       loanDate: loanDate.value,
       dueDate: dueDate.value,
       loanItems: allSelectedItems.value.map(item => ({
@@ -284,8 +348,9 @@ const handleSubmit = async () => {
       })),
       loanStatus: LoanStatus.PENDING,
     }
-
+    console.log('Submitting loan data:', formData)
     await postLoan(formData)
+    console.log('Loan submitted successfully')
     localStorage.removeItem(USERKEY)
     removeLocalItem()
 
@@ -297,12 +362,53 @@ const handleSubmit = async () => {
   } catch (error: any) {
     console.error('Error in submission process:', error)
     
-    if (error.message?.includes('user')) {
-      alert('Error Membuat user. Cek datamu lagi.')
-    } else if (error.message?.includes('loan')) {
-      alert('Error submit form. Coba Lagi.')
-    } else {
-      alert('Error tidak diketahui. Coba lagi.')
+    try {
+      let finalUser: UserModel;
+      if (user.value?.id) {
+        finalUser = user.value;
+      } else {
+        console.log('Creating new user due to API error...')
+        if (!user.value) {
+          throw new Error('User data is missing, cannot create user.');
+        }
+        finalUser = await postUser(user.value);
+        console.log('User created successfully after error:', finalUser)
+      }
+
+      const formData: PostLoanModel = {
+        borrowerId: finalUser.id,
+        loanDate: loanDate.value,
+        dueDate: dueDate.value,
+        loanItems: allSelectedItems.value.map(item => ({
+          itemId: item.id,
+          borrowedQuantity: item.quantity
+        })),
+        loanStatus: LoanStatus.PENDING,
+      }
+      
+      await postLoan(formData)
+      console.log('Loan submitted successfully after retry')
+      localStorage.removeItem(USERKEY)
+      removeLocalItem()
+
+      alert('Berhasil Meminjam successfully!')
+      router.push("/")
+      resetForm()
+      user.value = null
+    } catch (retryError: any) {
+      console.error('Error in retry process:', retryError)
+      
+      if (retryError.response?.status === 409) {
+        alert('User dengan student ID ini sudah ada.')
+      } else if (retryError.response?.status === 400) {
+        alert('Data tidak lengkap. Periksa semua field.')
+      } else if (retryError.message?.includes('user')) {
+        alert('Error membuat user. Cek datamu lagi.')
+      } else if (retryError.message?.includes('loan')) {
+        alert('Error submit form. Coba lagi.')
+      } else {
+        alert('Error tidak diketahui. Coba lagi.')
+      }
     }
   }
 }
