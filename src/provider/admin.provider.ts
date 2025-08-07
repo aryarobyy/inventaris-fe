@@ -1,9 +1,14 @@
 import { ADMIN } from "../core/contants";
-import type { PostAdminModel, UpdateAdminModel, AdminModel } from "../models/admin.model";
+import type { PostAdminModel, UpdateAdminModel, AdminModel, LoginAdminModel } from "../models/admin.model";
 import apiHandler from "./api.handler";
 
 export const postAdmin = async (admin: PostAdminModel): Promise<AdminModel> => {
   const data = await apiHandler.post<AdminModel>(`/${ADMIN}/`, admin);
+  return data.data;
+};
+
+export const loginAdmin = async (admin: LoginAdminModel): Promise<AdminModel> => {
+  const data = await apiHandler.post<AdminModel>(`/${ADMIN}/login`, admin);
   return data.data;
 };
 
