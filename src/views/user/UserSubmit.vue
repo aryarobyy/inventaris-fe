@@ -13,28 +13,21 @@
           id="name"
         />
         <MyInput
-          v-model="studentId"
-          title="Student ID"
-          placeHolder="Enter your Student ID"
+          v-model="identityNumber"
+          title="Identity Number"
+          placeHolder="Enter your Identity Number (NIM/NIK/etc)"
           :required="true"
           type="text"
-          id="studentId"
+          id="identityNumber"
         />
-        <MyInput
-          v-model="majorName"
-          title="Major Name"
-          placeHolder="Enter your Major Name"
-          :required="true"
-          type="text"
+        <MyDropdown
+          v-model="selectedMajor"
+          :options="majorOptions"
+          label="Major Name"
+          valueKey="value"
+          labelKey="label"
+          :multiple="false"
           id="majorName"
-        />
-        <MyInput
-          v-model="academicYear"
-          title="Academic Year"
-          placeHolder="Enter your Academic Year"
-          :required="true"
-          type="text"
-          id="academicYear"
         />
         <MyInput
           v-model="phoneNumber"
@@ -44,15 +37,6 @@
           type="tel"
           id="phoneNumber"
         />
-        <MyInput
-          v-model="organization"
-          title="Organization"
-          placeHolder="Enter your Organization"
-          :required="true"
-          type="text"
-          id="organization"
-        />
-
         <Button
           @click="handleSubmit"
           text="Submit"
@@ -61,7 +45,7 @@
       </div>
 
       <div class="text-center mt-6 text-sm text-gray-600">
-        <p>Sudah punya akun?</p>
+        <p>Sudah pernah pinjam?</p>
         <p
           @click="props.isLoan ? router.push('/user/login/loan'): router.push('/user/login/booking')"
           class="text-blue-600 hover:underline cursor-pointer font-medium mt-1"
@@ -89,20 +73,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted} from 'vue';
+import { ref, onMounted, computed} from 'vue';
 import MyInput from '../../components/Input.vue';
-import type { PostUserModel } from '../../models/user.model';
+import MyDropdown from '../../components/Dropdown.vue';
+import type { PostUserModel, UserModel } from '../../models/user.model';
 import MyPopup from '../../components/Popup.vue';
 import { useRouter } from 'vue-router';
 import Button from '../../components/Button.vue';
 import { getLocalData, postLocalUser, removeLocalData } from '../../libs/localData';
 import { USERKEY } from '../../core/contants';
+import { MajorName } from '../../models/enums';
+import { getUserByIdentity } from '../../provider/user.provider';
 
 interface Props {
   isLoan?: boolean
-  /**
-   * @default true
-   */
 }
 
 const props = withDefaults(defineProps<Props>(),{
@@ -112,11 +96,18 @@ const props = withDefaults(defineProps<Props>(),{
 const router = useRouter();
 
 const name = ref('');
-const studentId = ref('');
-const majorName = ref('');
-const academicYear = ref('');
+const identityNumber = ref('');
+const selectedMajor = ref<{value: string, label: string} | null>(null);
 const phoneNumber = ref('');
-const organization = ref('');
+
+const majorOptions = ref([
+  { value: MajorName.KEBIDANAN, label: 'Kebidanan' },
+  { value: MajorName.KEPERAWATAN, label: 'Keperawatan' },
+  { value: MajorName.PROMKES, label: 'Promosi Kesehatan' },
+  { value: MajorName.TLM, label: 'Teknologi Laboratorium Medis' },
+  { value: MajorName.FISIO, label: 'Fisioterapi' },
+  { value: MajorName.REKTORAT, label: 'Rektorat' },
+]);
 
 const showUserExistsPopup = ref(false);
 const popupTitle = ref('');
@@ -125,17 +116,17 @@ const popupDetailMessage = ref('');
 const popupVariant = ref<'info' | 'error'>('info');
 const showRightButton = ref(true);
 
+const majorName = computed(() => selectedMajor.value?.label || '');
+
 onMounted(() => {
-  const existingUser = getLocalData(USERKEY);
+  const existingUser: UserModel = getLocalData(USERKEY);
   if (existingUser) {
     popupTitle.value = 'Data Peminjam Terdeteksi!';
-    popupMessage.value = `Pengguna dengan NIM ${existingUser.studentId} sudah pernah mendaftar.`;
+    popupMessage.value = `Pengguna dengan ID ${existingUser.identityNumber} sudah pernah mendaftar.`;
     popupDetailMessage.value = `
       Nama: ${existingUser.name}
       Jurusan: ${existingUser.majorName}
-      Tahun Akademik: ${existingUser.academicYear}
       No. Telepon: ${existingUser.phoneNumber}
-      Organisasi: ${existingUser.organization}
     `.replace(/^\s+|\s+$/gm, '').replace(/\n/g, '<br/>');
 
     showUserExistsPopup.value = true;
@@ -144,52 +135,72 @@ onMounted(() => {
 
 const goToLoan = () => {
   showUserExistsPopup.value = false;
-  props.isLoan ? router.push('/loan/item'): router.push('/booking/request');
+  props.isLoan ? router.push('/loan/item') : router.push('/booking/request');
 };
 
 const cancelUser = () => {
   removeLocalData(USERKEY);
   showUserExistsPopup.value = false;
+  
+  name.value = '';
+  identityNumber.value = '';
+  selectedMajor.value = null;
+  phoneNumber.value = '';
 };
 
 const handleSubmit = async () => {
   showUserExistsPopup.value = false;
 
-  if (!studentId.value) {
+  if (!identityNumber.value) {
     popupVariant.value = 'error';
     showRightButton.value = false;
     popupTitle.value = 'Input Tidak Lengkap';
-    popupMessage.value = 'Nomor Induk Mahasiswa (NIM) harus diisi untuk melakukan pendaftaran.';
+    popupMessage.value = 'Nomor Identitas harus diisi untuk melakukan pendaftaran.';
+    popupDetailMessage.value = '';
+    showUserExistsPopup.value = true;
+    return;
+  }
+
+  if (!selectedMajor.value) {
+    popupVariant.value = 'error';
+    showRightButton.value = false;
+    popupTitle.value = 'Input Tidak Lengkap';
+    popupMessage.value = 'Jurusan harus dipilih untuk melakukan pendaftaran.';
+    popupDetailMessage.value = '';
+    showUserExistsPopup.value = true;
+    return;
+  }
+
+  if (!name.value || !phoneNumber.value) {
+    popupVariant.value = 'error';
+    showRightButton.value = false;
+    popupTitle.value = 'Input Tidak Lengkap';
+    popupMessage.value = 'Semua field harus diisi untuk melakukan pendaftaran.';
     popupDetailMessage.value = '';
     showUserExistsPopup.value = true;
     return;
   }
 
   try {
-    const existingUser = getLocalData(USERKEY);
-
-    if (existingUser) {
-      popupTitle.value = 'Pengguna Sudah Terdaftar!';
-      popupMessage.value = `Pengguna dengan NIM ${studentId.value} sudah ada.`;
+    const existingUser = await getUserByIdentity(identityNumber.value);
+    
+    if (existingUser && existingUser.identityNumber) {
+      popupTitle.value = 'Data Peminjam Terdeteksi!';
+      popupMessage.value = `Pengguna dengan ID ${existingUser.identityNumber} sudah pernah mendaftar.`;
       popupDetailMessage.value = `
         Nama: ${existingUser.name}
         Jurusan: ${existingUser.majorName}
-        Tahun Akademik: ${existingUser.academicYear}
         No. Telepon: ${existingUser.phoneNumber}
-        Organisasi: ${existingUser.organization}
       `.replace(/^\s+|\s+$/gm, '').replace(/\n/g, '<br/>');
-
       showUserExistsPopup.value = true;
       return;
     }
 
     const userData: PostUserModel = {
       name: name.value,
-      studentId: studentId.value,
-      majorName: majorName.value,
-      academicYear: academicYear.value,
+      identityNumber: identityNumber.value,
+      majorName: selectedMajor.value.label,
       phoneNumber: phoneNumber.value,
-      organization: organization.value,
     };
 
     postLocalUser(userData, USERKEY);
@@ -197,20 +208,29 @@ const handleSubmit = async () => {
     props.isLoan ? router.push('/loan/item'): router.push('/booking/request');
 
     name.value = '';
-    studentId.value = '';
-    majorName.value = '';
-    academicYear.value = '';
+    identityNumber.value = '';
+    selectedMajor.value = null;
     phoneNumber.value = '';
-    organization.value = '';
 
   } catch (error) {
-    popupVariant.value = 'error';
-    showRightButton.value = false;
     console.error('Error during user registration:', error);
-    popupTitle.value = 'Terjadi Kesalahan!';
-    popupMessage.value = 'Gagal memproses pendaftaran. Silakan coba lagi.';
-    popupDetailMessage.value = '';
-    showUserExistsPopup.value = true;
+    
+    const userData: PostUserModel = {
+      name: name.value,
+      identityNumber: identityNumber.value,
+      majorName: selectedMajor.value?.label || '',
+      phoneNumber: phoneNumber.value,
+    };
+
+    console.log('Saving user data to localStorage due to API error:', userData);
+    postLocalUser(userData, USERKEY);
+    console.log('User saved to localStorage after API error');
+    props.isLoan ? router.push('/loan/item'): router.push('/booking/request');
+
+    name.value = '';
+    identityNumber.value = '';
+    selectedMajor.value = null;
+    phoneNumber.value = '';
   }
 };
 

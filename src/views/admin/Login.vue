@@ -1,7 +1,7 @@
 <template>
-<div class="min-h-screen flex flex-col justify-center items-center bg-gray-100 font-sans">
-  <h1 class="text-4xl font-bold text-gray-800 mb-8 drop-shadow-sm">Login</h1>
-  <div class="gap-5 flex flex-col w-120 p-10 bg-green-200 rounded-2xl">
+<div class="min-h-screen flex flex-col justify-center items-center font-sans">
+  <h1 class="text-4xl font-bold text-white mb-8 drop-shadow-sm">Login</h1>
+  <div class="gap-5 flex flex-col w-120 p-10 bg-second rounded-2xl">
     <Input
       text="Login" 
       v-model="username"
@@ -27,8 +27,24 @@
       @click="handleLogin"
       class="w-full"
     />
+    <MyPopup
+      :isOpen="showUserExistsPopup"
+      @close="closePopup"
+      @left-click="cancelUser"
+      @right-click="$router.push('/')"
+      :variant="popupVariant"
+      :title="popupTitle"
+      :message="popupMessage"
+      :detailMessage="popupDetailMessage"
+      :showIcon="true"
+      :showLeftButton="true"
+      :showRightButton="showRightButton"
+      leftButtonText="Batalkan"
+      rightButtonText="Lanjut"
+    />
   </div>
 </div>
+  <Loading :isLoading="isLoading" />
 </template>
 
 <script setup lang="ts">
@@ -40,23 +56,76 @@ import type { LoginAdminModel } from '../../models/admin.model';
 import { postLocalAdmin } from '../../libs/localData';
 import { ADMINKEY } from '../../core/contants';
 import { useRouter } from 'vue-router';
+import MyPopup from '../../components/Popup.vue';
+import Loading from '../../components/Loading.vue';
 
 const username = ref<string>('');
 const password = ref<string>('');
 
-const router = useRouter()
+const router = useRouter();
+
+const showUserExistsPopup = ref(false);
+const popupTitle = ref('');
+const popupMessage = ref('');
+const popupDetailMessage = ref('');
+const popupVariant = ref<'info' | 'error'>('info');
+const showRightButton = ref(true);
+const isLoading = ref(false);
+
+const cancelUser = () => {
+  showUserExistsPopup.value = false;
+};
 
 const handleLogin = async () => {
+  showUserExistsPopup.value = false;
+  if (!username.value && !password.value) {
+    popupVariant.value = 'error';
+    showRightButton.value = false;
+    popupTitle.value = 'Input Tidak Lengkap';
+    popupMessage.value = 'Username dan Password harus diisi untuk melakukan login.';
+    popupDetailMessage.value = '';
+    showUserExistsPopup.value = true;
+    isLoading.value = false;
+    return;
+  }
+
+  isLoading.value = true;
   try {
     const loginData : LoginAdminModel = {
       username: username.value,
       password: password.value
     }
     const data = await loginAdmin(loginData);
+    if(!data) {
+      popupVariant.value = 'error';
+      showRightButton.value = false;
+      popupVariant.value = 'error';
+      popupTitle.value = 'Data Tidak Ditemukan!';
+      popupMessage.value = `Tidak ada data admin.`;
+      popupDetailMessage.value = '';
+      showUserExistsPopup.value = true;
+      isLoading.value = false;
+      return;
+    }
     postLocalAdmin(data, ADMINKEY)
-    router.push("/admin")
+    setTimeout(() => {
+      isLoading.value = false;
+      router.push("/admin");
+    }, 500);
   } catch (error) {
-    console.error(error)
+    console.error(error);
+    popupVariant.value = 'error';
+    showRightButton.value = false;
+    popupTitle.value = 'Terjadi Kesalahan!';
+    popupMessage.value = 'Login Gagal. Silakan coba lagi.';
+    popupDetailMessage.value = '';
+    showUserExistsPopup.value = true;
+    isLoading.value = false;
   }
+}
+
+const closePopup = () => {
+  showUserExistsPopup.value = false;
+  showRightButton.value = true;
 }
 </script>
