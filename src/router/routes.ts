@@ -13,6 +13,8 @@ import Home from "../views/home/Home.vue";
 import Item from "../views/item/Item.vue";
 import Loan from "../views/loan/Loan.vue";
 import LoanItem from "../views/loan/LoanItem.vue";
+import Maintanance from "../views/unknownHandler/Maintanance.vue";
+import UnknownPage from "../views/unknownHandler/UnknownPage.vue";
 import UserLogin from "../views/user/UserLogin.vue";
 import UserSubmit from "../views/user/UserSubmit.vue";
 
@@ -23,6 +25,11 @@ const routes = [
     path: "/",
     name: "Home",
     component: Home 
+  },
+  {
+    path: "/maintanance",
+    name: "Maintanance",
+    component: Maintanance 
   },
   {
     path: "/user",
@@ -65,7 +72,8 @@ const routes = [
       {
         path: "item",
         name: "LoanItem",
-        component: LoanItem
+        component: LoanItem,
+        props: { admin: admin}
       },
     ]
   },
@@ -104,10 +112,15 @@ const routes = [
     name: "AdminRegister",
     component: Register,
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: UnknownPage
+  }
 ];
 
-if (admin?.data) {
-  const role = admin.data.role;
+if (admin) {
+  const role = admin.role;
   console.log("Admin role:", role);
 
   if (role === Role.PENDING) {
@@ -128,6 +141,7 @@ if (admin?.data) {
         path: "",
         name: "AdminDashboard",
         component: Dashboard,
+        props: { admin: admin }
       },
     ];
 
@@ -136,6 +150,7 @@ if (admin?.data) {
         path: "approve",
         name: "AdminApprove",
         component: ApproveAdmin,
+        props: { admin: admin }
       });
     } 
     if (role === "admin" || role === Role.SUPER_ADMIN) {
@@ -143,11 +158,13 @@ if (admin?.data) {
         path: "add",
         name: "AdminAddItem",
         component: AddItem,
+        props: { admin: admin }
       });
     }
 
     routes.push({
       path: "/admin",
+      name: "Admin",
       children: adminChildren,
     });
   }

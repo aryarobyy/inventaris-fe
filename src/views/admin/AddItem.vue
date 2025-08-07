@@ -109,6 +109,17 @@ import { useRouter } from 'vue-router';
 import type { PostItemModel } from '../../models/item.model';
 import { postItem } from '../../provider/item.provider';
 import { ItemAvailability, ItemCategory, ItemCondition } from '../../models/enums';
+import Dropdown from '../../components/Dropdown.vue';
+import type { AdminModel } from '../../models/admin.model';
+
+interface Props {
+  showAction?: boolean;
+  admin: AdminModel;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showAction: false,
+})
 
 const name = ref('');
 const description = ref('');
@@ -195,6 +206,7 @@ const handleUploadItem = async () => {
     quantity: parsedQuantity,
     brand: brand.value,
     pairId: parsedPairId,
+    stock: parsedQuantity,
     statusNotes: statusNotes.value,
     category: category.value.toUpperCase() as ItemCategory,
     conditionStatus: conditionStatus.value.toUpperCase() as ItemCondition,
