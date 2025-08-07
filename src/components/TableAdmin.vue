@@ -30,10 +30,7 @@
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p class="mt-2 text-sm text-gray-600">Memuat data...</p>
-      </div>
+      <Loading v-if="isLoading" :isLoading="isLoading" />
 
       <!-- Error state -->
       <div v-else-if="error" class="text-center py-12">
@@ -245,6 +242,7 @@ import type { AdminModel } from '../models/admin.model'
 import { getAdmins, updateAdmin } from '../provider/admin.provider'
 import { Check, X } from 'lucide-vue-next'
 import Button from './Button.vue'
+import Loading from './Loading.vue'
 
 interface Props {
   showAction?: boolean
@@ -281,7 +279,7 @@ onMounted(async () => {
   try {
     const data = await getAdmins()
     localAdmins.value = data
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error loading admins:', error)
   }
 })

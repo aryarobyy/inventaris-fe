@@ -30,10 +30,7 @@
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p class="mt-2 text-sm text-gray-600">Memuat data...</p>
-      </div>
+      <Loading v-if="isLoading" :isLoading="isLoading" />
 
       <!-- Error state -->
       <div v-else-if="error" class="text-center py-12">
@@ -65,6 +62,7 @@
                   <p class="font-semibold text-gray-900">{{ loan.borrower.name }}</p>
                 </div>
               </div>
+              
               <span :class="[statusClass(loan.loanStatus)]">{{ getStatusText(loan.loanStatus) }}</span>
             </div>
             
@@ -85,37 +83,27 @@
               <p>Tempo: {{ formatDate(loan.dueDate) }}</p>
             </div>
             
-            <div v-if="loan.loanStatus === LoanStatus.PENDING && props.showAction" class="flex justify-center space-x-2 pt-2 border-t border-gray-200">
-              <Button
-                :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Setujui'"
-                :loading="updatingLoanIds.has(loan.id)"
-                :icon="Check"
-                icon-position="left"
-                :disabled="updatingLoanIds.has(loan.id)"
-                size="small"
-                variant="accept"
-                @click="updateLoanStatus(loan, LoanStatus.APPROVED)"
-              />
-              <Button
-                :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Tolak'"
-                :loading="updatingLoanIds.has(loan.id)"
-                :icon="X"
-                icon-position="left"
-                :disabled="updatingLoanIds.has(loan.id)"
-                size="small"
-                variant="custom"
-                @click="updateLoanStatus(loan, LoanStatus.CANCELLED)"
-              />
+            <div v-if="props.showAction" class="flex justify-center pt-2 border-t border-gray-200">
+              <div class="w-full max-w-[200px]">
+                <Dropdown
+                  :model-value="getCurrentStatusOption(loan.loanStatus)"
+                  :options="statusChangeOptions"
+                  value-key="value"
+                  label-key="label"
+                  :multiple="false"
+                  @update:model-value="updateLoanStatus(loan, $event.value)"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Desktop View -->
         <div class="hidden sm:block">
-          <div class="bg-tertiary rounded-lg shadow overflow-hidden ">
+          <div class="bg-tertiary rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto">
               <table class="min-w-full">
-                <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal w-full">
                   <tr>
                     <th class="p-3 text-left whitespace-nowrap">No</th>
                     <th class="p-3 text-left whitespace-nowrap">ID</th>
@@ -151,9 +139,9 @@
                     </td>
                     <td class="p-3">
                       <div class="space-y-1">
-                        <div v-for="item in loan.loanItems" :key="item.item.id" class="flex justify-between items-center">
+                        <div v-for="item in loan.loanItems" :key="item.item.id" class="items-center">
                           <span class="text-sm">• {{ item.item.name }}</span>
-                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-5">
                             {{ item.borrowedQuantity }}
                           </span>
                         </div>
@@ -161,33 +149,21 @@
                     </td>
                     <td class="p-3 whitespace-nowrap">{{ formatDate(loan.loanDate) }}</td>
                     <td class="p-3 whitespace-nowrap">{{ formatDate(loan.dueDate) }}</td>
-                    <td class="p-3 whitespace-nowrap text-center">
+                    <td class="p-3 whitespace-nowrap flex text-center justify-center">
                       <span :class="[statusClass(loan.loanStatus)]">{{ getStatusText(loan.loanStatus) }}</span>
                     </td>
                     <td class="p-3 whitespace-nowrap text-center">
-                      <div 
-                      v-if="props.showAction"
-                      class="flex justify-center space-x-2">
-                        <Button
-                          :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Setujui'"
-                          :loading="updatingLoanIds.has(loan.id)"
-                          :icon="Check"
-                          icon-position="left"
-                          :disabled="updatingLoanIds.has(loan.id)"
-                          size="small"
-                          variant="accept"
-                          @click="updateLoanStatus(loan, LoanStatus.APPROVED)"
-                        />
-                        <Button
-                          :text="updatingLoanIds.has(loan.id) ? 'Memproses...' : 'Tolak'"
-                          :loading="updatingLoanIds.has(loan.id)"
-                          :icon="X"
-                          icon-position="left"
-                          :disabled="updatingLoanIds.has(loan.id)"
-                          size="small"
-                          variant="custom"
-                          @click="updateLoanStatus(loan, LoanStatus.CANCELLED)"
-                        />
+                      <div v-if="props.showAction" class="flex justify-center">
+                        <div class="w-full max-w-[160px]">
+                          <Dropdown
+                            :model-value="getCurrentStatusOption(loan.loanStatus)"
+                            :options="statusChangeOptions"
+                            value-key="value"
+                            label-key="label"
+                            :multiple="false"
+                            @update:model-value="updateLoanStatus(loan, $event.value)"
+                          />
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -241,15 +217,17 @@
 
 <script lang="ts" setup>
 import { ref, computed, reactive, watchEffect } from 'vue'
-import type { LoanModel } from '../models/loan.model'
+import type { LoanModel, UpdateLoanModel } from '../models/loan.model'
 import { updateLoan } from '../provider/loan.provider'
 import { LoanStatus } from '../models/enums'
 import useGetLoans from '../hooks/useGetLoans'
-import { Check, X } from 'lucide-vue-next'
-import Button from './Button.vue'
+import Loading from './Loading.vue'
+import Dropdown from './Dropdown.vue'
+import type { AdminModel } from '../models/admin.model'
 
 interface Props {
   showAction?: boolean;
+  admin: AdminModel;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -280,23 +258,43 @@ const search = ref('')
 const filterStatus = ref('')
 
 const filteredLoansAlternative = computed(() => {
-  if (!search.value && !filterStatus.value) {
-    return localLoans.value;
+  let filteredLoans = [...localLoans.value];
+
+  if (search.value) {
+    const searchTerm = search.value.toLowerCase().trim();
+    filteredLoans = filteredLoans.filter((loan) => {
+      return loan.borrower.name?.toLowerCase().includes(searchTerm) ||
+            loan.loanItems.some(loanItem => 
+              loanItem.item.name.toLowerCase().includes(searchTerm)
+            );
+    });
   }
 
-  return localLoans.value.filter((loan) => {
-    const searchTerm = search.value.toLowerCase().trim();
+  if (filterStatus.value) {
+    filteredLoans = filteredLoans.filter(loan => loan.loanStatus === filterStatus.value);
+  // } else {
+  //   filteredLoans = filteredLoans.filter(loan => 
+  //     loan.loanStatus !== LoanStatus.RETURNED && 
+  //     loan.loanStatus !== LoanStatus.CANCELLED
+  //   );
+  }
+
+  // const today = new Date();
+  // today.setHours(0, 0, 0, 0); 
+  // filteredLoans.sort((a, b) => {
+  //   const dateA = new Date(a.loanDate);
+  //   const dateB = new Date(b.loanDate);
     
-    const searchMatch = !searchTerm || 
-      loan.borrower.name?.toLowerCase().includes(searchTerm) ||
-      loan.loanItems.some(loanItem => 
-        loanItem.item.name.toLowerCase().includes(searchTerm)
-      );
+  //   dateA.setHours(0, 0, 0, 0);
+  //   dateB.setHours(0, 0, 0, 0);
     
-    const statusMatch = !filterStatus.value || loan.loanStatus === filterStatus.value;
+  //   const diffA = Math.abs(dateA.getTime() - today.getTime());
+  //   const diffB = Math.abs(dateB.getTime() - today.getTime());
     
-    return searchMatch && statusMatch;
-  });
+  //   return diffA - diffB; 
+  // });
+
+  return filteredLoans;
 });
 
 const getInitials = (name: string) => {
@@ -329,12 +327,31 @@ const loanStatusOptions = [
   { value: LoanStatus.CANCELLED, label: 'Ditolak' },
 ];
 
+const statusChangeOptions = [
+  { value: LoanStatus.PENDING, label: 'Pending' },
+  { value: LoanStatus.APPROVED, label: 'Disetujui' },
+  { value: LoanStatus.ACTIVE, label: 'Aktif' },
+  { value: LoanStatus.RETURNED, label: 'Dikembalikan' },
+  { value: LoanStatus.OVERDUE, label: 'Terlambat' },
+  { value: LoanStatus.CANCELLED, label: 'Ditolak' },
+];
+
+const getCurrentStatusOption = (status: LoanStatus) => {
+  return statusChangeOptions.find(option => option.value === status) || statusChangeOptions[0];
+};
+
 const getStatusText = (status: LoanStatus) => {
   switch (status) {
     case LoanStatus.PENDING:
       return 'Pending'
     case LoanStatus.APPROVED:
       return 'Disetujui'
+    case LoanStatus.ACTIVE:
+      return 'Aktif'
+    case LoanStatus.RETURNED:
+      return 'Dikembalikan'
+    case LoanStatus.OVERDUE:
+      return 'Terlambat'
     case LoanStatus.CANCELLED:
       return 'Ditolak'
     default:
@@ -349,12 +366,37 @@ const statusClass = (status: LoanStatus) => {
       return `${baseClass} bg-yellow-100 text-yellow-800`;
     case LoanStatus.APPROVED:
       return `${baseClass} bg-green-100 text-green-800`;
+    case LoanStatus.ACTIVE:
+      return `${baseClass} bg-blue-100 text-blue-800`;
+    case LoanStatus.RETURNED:
+      return `${baseClass} bg-gray-100 text-gray-800`;
+    case LoanStatus.OVERDUE:
+      return `${baseClass} bg-red-100 text-red-800`;
     case LoanStatus.CANCELLED:
       return `${baseClass} bg-red-100 text-red-800`;
     default:
       return `${baseClass} bg-gray-100 text-gray-800`;
   }
 }
+
+// const getStatusSelectClass = (status: LoanStatus) => {
+//   switch (status) {
+//     case LoanStatus.PENDING:
+//       return 'text-yellow-800';
+//     case LoanStatus.APPROVED:
+//       return 'text-green-800';
+//     case LoanStatus.ACTIVE:
+//       return 'text-blue-800';
+//     case LoanStatus.RETURNED:
+//       return 'text-gray-800';
+//     case LoanStatus.OVERDUE:
+//       return 'text-red-800';
+//     case LoanStatus.CANCELLED:
+//       return 'text-red-800';
+//     default:
+//       return 'text-gray-800';
+//   }
+// }
 
 const showNotification = (type: 'success' | 'error', title: string, message: string) => {
   notification.show = true
@@ -372,11 +414,16 @@ const hideNotification = () => {
 }
 
 const updateLoanStatus = async (loan: LoanModel, newStatus: LoanStatus) => {
+  if (loan.loanStatus === newStatus) {
+    return;
+  }
+
   updatingLoanIds.value.add(loan.id)
   
   try {
-    const updatedLoanData = await updateLoan(loan.id, {
-      loanStatus: newStatus
+    const updatedLoanData : UpdateLoanModel= await updateLoan(loan.id, {
+      loanStatus: newStatus,
+      approvedById: props.admin?.id || 0,
     })
     
     const loanIndex = localLoans.value.findIndex(l => l.id === loan.id)
@@ -389,11 +436,10 @@ const updateLoanStatus = async (loan: LoanModel, newStatus: LoanStatus) => {
     
     emit('loanUpdated', localLoans.value[loanIndex])
     
-    const statusText = newStatus === LoanStatus.APPROVED ? 'disetujui' : 'ditolak'
     showNotification(
       'success',
       'Berhasil!',
-      `Peminjaman ${loan.borrower.name} berhasil ${statusText}.`
+      `Status peminjaman ${loan.borrower.name} berhasil diubah ke ${getStatusText(newStatus)}.`
     )
     
     console.log(`Updated loan ${loan.id} to ${newStatus}`, updatedLoanData)

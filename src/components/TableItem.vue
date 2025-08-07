@@ -30,10 +30,7 @@
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p class="mt-2 text-sm text-gray-600">Memuat data...</p>
-      </div>
+      <Loading v-if="isLoading" :isLoading="isLoading" />
 
       <!-- Error state -->
       <div v-else-if="error" class="text-center py-12">
@@ -76,9 +73,9 @@
             
             <div class="mb-3">
               <p class="text-sm text-gray-600 mb-1">Merek: <span class="font-medium">{{ item.brand || '-' }}</span></p>
-              <p class="text-sm text-gray-600 mb-1">Kategori: <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{{ item.category }}</span></p>
+              <p class="text-sm text-gray-600 mb-1">Kategori: <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{{ getCategoryItem(item.category) }}</span></p>
               <p class="text-sm text-gray-600 mb-1">Kondisi: <span :class="[conditionStatusClass(item.conditionStatus)]">{{ getConditionStatusText(item.conditionStatus) }}</span></p>
-              <p class="text-sm text-gray-600 mb-1">Jumlah: <span class="font-medium">{{ item.quantity }}</span></p>
+              <p class="text-sm text-gray-600 mb-1">Stock: <span class="font-medium">{{ item.stock }}</span></p>
               <p class="text-sm text-gray-600">Dipinjam: <span class="font-medium">{{ item.borrowedQuantity || 0 }}</span></p>
             </div>
             
@@ -131,7 +128,7 @@
                     <th class="p-3 text-left whitespace-nowrap">Merek</th>
                     <th class="p-3 text-left whitespace-nowrap">Kategori</th>
                     <th class="p-3 text-left whitespace-nowrap">Kondisi</th>
-                    <th class="p-3 text-left whitespace-nowrap">Jumlah</th>
+                    <th class="p-3 text-left whitespace-nowrap">Stock</th>
                     <th class="p-3 text-left whitespace-nowrap">Dipinjam</th>
                     <th class="p-3 text-left whitespace-nowrap">Tgl Dibuat</th>
                     <th class="p-3 text-left whitespace-nowrap">Tgl Update</th>
@@ -140,7 +137,7 @@
                       v-if="shouldShowActionColumn"
                       class="p-3 text-center whitespace-nowrap"
                     >
-                      Aksi
+                      Action
                     </th>
                   </tr>
                 </thead>
@@ -174,13 +171,13 @@
                     <td class="p-3 whitespace-nowrap">{{ item.brand || '-' }}</td>
                     <td class="p-3 whitespace-nowrap">
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {{ item.category }}
+                        {{ getCategoryItem(item.category) }}
                       </span>
                     </td>
                     <td class="p-3 whitespace-nowrap">
                       <span :class="[conditionStatusClass(item.conditionStatus)]">{{ getConditionStatusText(item.conditionStatus) }}</span>
                     </td>
-                    <td class="p-3 whitespace-nowrap">{{ item.quantity }}</td>
+                    <td class="p-3 whitespace-nowrap">{{ item.stock }}</td>
                     <td class="p-3 whitespace-nowrap">{{ item.borrowedQuantity || 0 }}</td>
                     <td class="p-3 whitespace-nowrap">{{ formatDate(item.createdAt) }}</td>
                     <td class="p-3 whitespace-nowrap">{{ formatDate(item.updatedAt) }}</td>
@@ -188,7 +185,6 @@
                       <span :class="[availabilityStatusClass(item.availabilityStatus)]">{{ getAvailabilityStatusText(item.availabilityStatus) }}</span>
                     </td>
                     <td v-if="shouldShowActionColumn" class="p-3 whitespace-nowrap text-center">
-                      <!-- Action buttons -->
                       <div 
                         v-if="canShowActionButtons(item)"
                         class="flex justify-center space-x-2"
@@ -271,12 +267,13 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import type { ItemModel } from '../models/item.model'
 import { Check, Settings, X } from 'lucide-vue-next'
-import { ItemAvailability, ItemCondition } from '../models/enums'
+import { ItemAvailability, ItemCategory, ItemCondition, Role } from '../models/enums'
 import { getItems, updateItem } from '../provider/item.provider'
 import Button from './Button.vue'
+import Loading from './Loading.vue'
 
 interface Props {
-  showAction?: boolean
+  showAction: boolean
   isLoading?: boolean
   error?: string | null
   currentUserRole?: string 
@@ -314,7 +311,6 @@ onMounted(async () => {
     console.error('Error loading items:', error)
   }
 })
-console.log('Mounted and items loaded:', localItems.value)
 
 const filteredItems = computed(() => {
   if (!search.value && !filterStatus.value) {
@@ -349,7 +345,7 @@ const filteredItems = computed(() => {
 })
 
 const isSuperAdmin = computed(() => {
-  return props.currentUserRole === 'super_admin'
+  return props.currentUserRole === Role.SUPER_ADMIN
 })
 
 const shouldShowActionColumn = computed(() => {
@@ -449,6 +445,33 @@ const conditionStatusClass = (status: string) => {
   }
 }
 
+const getCategoryItem = (category: string) => {
+  switch (category) {
+    case ItemCategory.CABLE:
+      return 'Kabel'
+    case ItemCategory.COMPUTER:
+      return 'Komputer'
+    case ItemCategory.HEADSET:
+      return 'Headset'
+    case ItemCategory.KEYBOARD:
+      return 'Keyboard'
+    case ItemCategory.LAPTOP:
+      return 'Laptop'
+    case ItemCategory.MONITOR:
+      return 'Monitor'
+    case ItemCategory.MOUSE:
+      return 'Mouse'
+    case ItemCategory.PRINTER:
+      return 'Printer'
+    case ItemCategory.PROJECTOR:
+      return 'Proyektor'
+    case ItemCategory.WEB_CAM:
+      return 'Web Cam'
+    default:
+      return category
+  }
+}
+
 const showNotification = (type: 'success' | 'error', title: string, message: string) => {
   notification.show = true
   notification.type = type
@@ -469,7 +492,8 @@ const updateItemAvailability = async (item: ItemModel, newStatus: ItemAvailabili
   
   try {
     const updatedItemData = await updateItem(item.id, {
-      availabilityStatus: newStatus
+      availabilityStatus: newStatus,
+      stock: item.stock
     })
     
     const itemIndex = localItems.value.findIndex(i => i.id === item.id)
