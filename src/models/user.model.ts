@@ -4,12 +4,11 @@
 export interface UserModel {
   id: number;
   name: string;
-  studentId: string;
+  identityNumber: string;
   majorName: string;
-  academicYear: string;
   phoneNumber: string;
-  organization: string;
-  createdAt: string;  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   
   // loans?: LoanItemModel[];
   // roomBookings?: RoomBookingModel[];
@@ -17,18 +16,19 @@ export interface UserModel {
 
 export interface PostUserModel {
   name: string;
-  studentId: string;
+  identityNumber: string;
   majorName: string;
-  academicYear: string;
   phoneNumber: string;
-  organization: string;
 }
 
 export interface UpdateUserModel {
   name?: string;
-  studentId?: string;
+  identityNumber?: string;
   majorName?: string;
-  academicYear?: string;
   phoneNumber?: string;
-  organization?: string;
+}
+
+// user.model.ts
+export type UserIdentity = {
+    identityNumber: string;
 }

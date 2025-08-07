@@ -1,3 +1,4 @@
+import type { AdminModel } from "./admin.model";
 import type { LoanStatus } from "./enums";
 import type { UserModel } from "./user.model";
 
@@ -20,6 +21,8 @@ export interface LoanModel {
   dueDate: string;
   returnDate?: string | null;
   notes?: string | null;
+  approvedBy: AdminModel;
+  approvedById: number;
   createdAt: string;
   updatedAt: string;
   loanStatus: LoanStatus;
@@ -45,6 +48,7 @@ export interface UpdateLoanModel {
   returnDate?: string | null;
   notes?: string | null;
   loanStatus?: LoanStatus;
+  approvedById?: number;
   loanItems?: {
     itemId: number;
     borrowedQuantity: number;

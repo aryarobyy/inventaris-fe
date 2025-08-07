@@ -9,6 +9,7 @@ export interface ItemModel {
   brand?: string;
   imgUrl?: string;
   pairId?: number;
+  stock: number;
   statusNotes?: string;
   borrowedQuantity?: number;
   createdAt: string;
@@ -27,6 +28,7 @@ export interface PostItemModel {
   brand?: string;
   imgUrl?: string;
   pairId?: number;
+  stock: number;
   borrowedQuantity?: number;
   statusNotes?: string;
 
@@ -42,6 +44,7 @@ export interface UpdateItemModel {
   brand?: string;
   imgUrl?: string;
   pairId?: number;
+  stock: number;
   borrowedQuantity?: number;
   statusNotes?: string;
 
