@@ -1,34 +1,33 @@
 <template>
-  <div class="flex">
-    <div class="flex-1 min-h-screen ">
-      <TableLoan />
+  <div class="flex items-center justify-center min-h-screen bg-[var(--color-second)]">
+    <div class="text-center p-8 bg-white shadow-lg rounded-xl max-w-lg">
+      <h1 class="text-3xl font-bold mb-4 text-[var(--color-primary)]">Selamat Datang!</h1>
+      <p class="mb-6 text-[var(--color-tertiary)]">
+        Silakan pilih layanan yang ingin Anda gunakan.
+      </p>
+      <div class="flex space-x-4">
+        <MyButton 
+          text="Booking Ruangan"
+          @click="$router.push('book')"/>
+        <MyButton
+          text="Pinjam Barang" 
+          @click="$router.push('/loan')"/>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-// import Header from '@/components/Header.vue'
-// import Sidebar from '@/components/Sidebar.vue'
-import { ref, computed } from 'vue'
-import TableLoan from '../../components/TableLoan.vue'
+import { useRouter } from 'vue-router';
+import MyButton from '../../components/Button.vue';
 
-type Loan = {
-  id: number
-  item: string
-  borrower: string
-  status: 'pending' | 'approved' | 'rejected'
+
+const router = useRouter();
+const handleBooking = () => {
+
 }
 
-const loans = ref<Loan[]>([
-  { id: 1, item: 'Proyektor', borrower: 'Andi', status: 'pending' },
-  { id: 2, item: 'Laptop', borrower: 'Budi', status: 'approved' },
-  { id: 3, item: 'HDMI Cable', borrower: 'Citra', status: 'rejected' },
-  { id: 4, item: 'Speaker', borrower: 'Dina', status: 'approved' }
-])
-
-const total = computed(() => loans.value.length)
-const pending = computed(() => loans.value.filter((l) => l.status === 'pending').length)
-const approved = computed(() => loans.value.filter((l) => l.status === 'approved').length)
-
-const latestLoans = computed(() => loans.value.slice(-3).reverse())
+const handleLoan = () => {
+  
+}
 </script>

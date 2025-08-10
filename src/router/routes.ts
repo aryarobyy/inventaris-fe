@@ -144,6 +144,7 @@ if (admin) {
         props: { admin: admin }
       },
     ];
+      console.log("Super Admin detected, adding all routes", role);
 
     if (role === Role.SUPER_ADMIN) {
       adminChildren.push({

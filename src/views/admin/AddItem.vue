@@ -57,30 +57,36 @@
         id="statusNotes"
       />
 
-      <MyInput
-        v-model="category"
-        title="Category"
-        placeHolder="e.g., ELECTRONICS, FURNITURE"
-        :required="true"
-        type="text"
+      <!-- Category Dropdown -->
+      <Dropdown
+        v-model="selectedCategory"
+        :options="categoryOptions"
+        label="Category *"
+        valueKey="value"
+        labelKey="label"
+        :multiple="false"
         id="category"
       />
 
-      <MyInput
-        v-model="conditionStatus"
-        title="Condition Status"
-        placeHolder="e.g., GOOD, DAMAGED, NEW"
-        :required="true"
-        type="text"
+      <!-- Condition Status Dropdown -->
+      <Dropdown
+        v-model="selectedConditionStatus"
+        :options="conditionStatusOptions"
+        label="Condition Status *"
+        valueKey="value"
+        labelKey="label"
+        :multiple="false"
         id="conditionStatus"
       />
 
-      <MyInput
-        v-model="availabilityStatus"
-        title="Availability Status"
-        placeHolder="e.g., AVAILABLE, LOANED, MAINTENANCE"
-        :required="true"
-        type="text"
+      <!-- Availability Status Dropdown -->
+      <Dropdown
+        v-model="selectedAvailabilityStatus"
+        :options="availabilityStatusOptions"
+        label="Availability Status *"
+        valueKey="value"
+        labelKey="label"
+        :multiple="false"
         id="availabilityStatus"
       />
 
@@ -95,7 +101,7 @@
            :class="{ 'bg-red-100 text-red-800': popupType === 'error', 'bg-green-100 text-green-800': popupType === 'success' }">
         <h3 class="font-bold">{{ popupTitle }}</h3>
         <p>{{ popupMessage }}</p>
-        <p v-if="popupDetailMessage" class="text-sm italic">{{ popupDetailMessage }}</p>
+        <p v-if="popupDetailMessage" class="text-sm italic whitespace-pre-line">{{ popupDetailMessage }}</p>
         <button @click="showNotificationPopup = false" class="mt-2 text-blue-600 hover:underline">Tutup</button>
       </div>
     </div>
@@ -103,14 +109,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import MyInput from '../../components/Input.vue';
+import Dropdown from '../../components/Dropdown.vue';
 import { useRouter } from 'vue-router';
+import type { AdminModel } from '../../models/admin.model';
+import { ItemAvailability, ItemCategory, ItemCondition } from '../../models/enums';
 import type { PostItemModel } from '../../models/item.model';
 import { postItem } from '../../provider/item.provider';
-import { ItemAvailability, ItemCategory, ItemCondition } from '../../models/enums';
-import Dropdown from '../../components/Dropdown.vue';
-import type { AdminModel } from '../../models/admin.model';
 
 interface Props {
   showAction?: boolean;
@@ -128,9 +134,9 @@ const brand = ref('');
 const pairId = ref('');
 const statusNotes = ref('');
 
-const category = ref('');
-const conditionStatus = ref('');
-const availabilityStatus = ref('');
+const selectedCategory = ref<{value: string, label: string} | null>(null);
+const selectedConditionStatus = ref<{value: string, label: string} | null>(null);
+const selectedAvailabilityStatus = ref<{value: string, label: string} | null>(null);
 
 const showNotificationPopup = ref(false);
 const popupTitle = ref('');
@@ -140,9 +146,26 @@ const popupType = ref<'success' | 'error' | ''>('');
 
 const router = useRouter();
 
-function isValidEnumValue<T extends Record<string, string>>(enumObject: T, value: string): boolean {
-  return Object.values(enumObject).includes(value as T[keyof T]);
-}
+const categoryOptions = computed(() => {
+  return Object.entries(ItemCategory).map(([key, value]) => ({
+    value: value,
+    label: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())
+  }));
+});
+
+const conditionStatusOptions = computed(() => {
+  return Object.entries(ItemCondition).map(([key, value]) => ({
+    value: value,
+    label: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())
+  }));
+});
+
+const availabilityStatusOptions = computed(() => {
+  return Object.entries(ItemAvailability).map(([key, value]) => ({
+    value: value,
+    label: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())
+  }));
+});
 
 const handleUploadItem = async () => {
   showNotificationPopup.value = false;
@@ -151,35 +174,36 @@ const handleUploadItem = async () => {
   popupDetailMessage.value = '';
   popupType.value = '';
 
-  const requiredFields = [
-    { value: name.value, name: 'Nama Item' },
-    { value: quantity.value, name: 'Kuantitas' },
-    { value: category.value, name: 'Kategori', enum: ItemCategory },
-    { value: conditionStatus.value, name: 'Status Kondisi', enum: ItemCondition },
-    { value: availabilityStatus.value, name: 'Status Ketersediaan', enum: ItemAvailability },
-  ];
-
   let validationErrors: string[] = [];
 
-  requiredFields.forEach(field => {
-    if (!field.value.trim()) {
-      validationErrors.push(`${field.name} tidak boleh kosong.`);
-    }
-  });
+  if (!name.value.trim()) {
+    validationErrors.push('Nama Item tidak boleh kosong.');
+  }
+
+  if (!quantity.value.trim()) {
+    validationErrors.push('Kuantitas tidak boleh kosong.');
+  }
+
+  if (!selectedCategory.value) {
+    validationErrors.push('Kategori harus dipilih.');
+  }
+
+  if (!selectedConditionStatus.value) {
+    validationErrors.push('Status Kondisi harus dipilih.');
+  }
+
+  if (!selectedAvailabilityStatus.value) {
+    validationErrors.push('Status Ketersediaan harus dipilih.');
+  }
 
   const parsedQuantity = parseInt(quantity.value);
-  if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+  if (quantity.value.trim() && (isNaN(parsedQuantity) || parsedQuantity <= 0)) {
     validationErrors.push('Kuantitas harus berupa angka positif.');
   }
 
-  if (category.value.trim() && !isValidEnumValue(ItemCategory, category.value)) {
-      validationErrors.push(`Kategori tidak valid. Pilihan: ${Object.values(ItemCategory).join(', ')}.`);
-  }
-  if (conditionStatus.value.trim() && !isValidEnumValue(ItemCondition, conditionStatus.value)) {
-      validationErrors.push(`Status Kondisi tidak valid. Pilihan: ${Object.values(ItemCondition).join(', ')}.`);
-  }
-  if (availabilityStatus.value.trim() && !isValidEnumValue(ItemAvailability, availabilityStatus.value)) {
-      validationErrors.push(`Status Ketersediaan tidak valid. Pilihan: ${Object.values(ItemAvailability).join(', ')}.`);
+  const parsedPairId = pairId.value.trim() ? parseInt(pairId.value) : undefined;
+  if (pairId.value.trim() && isNaN(parsedPairId as number)) {
+    validationErrors.push('Pair ID harus berupa angka jika diisi.');
   }
 
   if (validationErrors.length > 0) {
@@ -191,15 +215,6 @@ const handleUploadItem = async () => {
     return;
   }
 
-  const parsedPairId = pairId.value.trim() ? parseInt(pairId.value) : undefined;
-  if (pairId.value.trim() && isNaN(parsedPairId as number)) {
-      popupTitle.value = 'Input Tidak Valid';
-      popupMessage.value = 'Pair ID harus berupa angka jika diisi.';
-      popupType.value = 'error';
-      showNotificationPopup.value = true;
-      return;
-  }
-
   const itemData: PostItemModel = {
     name: name.value,
     description: description.value,
@@ -208,9 +223,9 @@ const handleUploadItem = async () => {
     pairId: parsedPairId,
     stock: parsedQuantity,
     statusNotes: statusNotes.value,
-    category: category.value.toUpperCase() as ItemCategory,
-    conditionStatus: conditionStatus.value.toUpperCase() as ItemCondition,
-    availabilityStatus: availabilityStatus.value.toUpperCase() as ItemAvailability,
+    category: selectedCategory.value!.value as ItemCategory,
+    conditionStatus: selectedConditionStatus.value!.value as ItemCondition,
+    availabilityStatus: selectedAvailabilityStatus.value!.value as ItemAvailability,
   };
 
   try {
@@ -229,9 +244,9 @@ const handleUploadItem = async () => {
     brand.value = '';
     pairId.value = '';
     statusNotes.value = '';
-    category.value = '';
-    conditionStatus.value = '';
-    availabilityStatus.value = '';
+    selectedCategory.value = null;
+    selectedConditionStatus.value = null;
+    selectedAvailabilityStatus.value = null;
 
   } catch (error: any) {
     console.error('Gagal mengunggah item:', error);
@@ -244,6 +259,3 @@ const handleUploadItem = async () => {
   }
 };
 </script>
-
-<style scoped>
-</style>

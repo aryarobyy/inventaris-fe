@@ -1,87 +1,76 @@
 <template>
-  <div class="p-4">
-    <div class="flex justify-between items-center mb-4">
-      <input v-model="search" placeholder="Cari barang..." class="p-2 border rounded w-1/3" />
-      <select v-model="filterStatus" class="p-2 border rounded">
-        <option value="">Semua Status</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Disetujui</option>
-        <option value="rejected">Ditolak</option>
-      </select>
+  <div class="p-6 min-h-screen">
+    <div class="flex flex-col">
+      <h1 class="text-2xl font-bold mb-4 text-white">Dashboard</h1>
+      <!-- <Button 
+        text="Download Excel"
+        variant="outline"
+        @click="handleClick"
+      /> -->
+      <TableLoan
+        :showAction=true
+        :admin="props.admin"
+      />
     </div>
-
-    <table class="min-w-full table-auto border-collapse">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="p-2 border">No</th>
-          <th class="p-2 border">Nama Barang</th>
-          <th class="p-2 border">Peminjam</th>
-          <th class="p-2 border">Tanggal</th>
-          <th class="p-2 border">Status</th>
-          <th class="p-2 border">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(loan, i) in filteredLoans"
-          :key="loan.id"
-          class="hover:bg-gray-50 transition"
-        >
-          <td class="p-2 border text-center">{{ i + 1 }}</td>
-          <td class="p-2 border">{{ loan.item }}</td>
-          <td class="p-2 border">{{ loan.borrower }}</td>
-          <td class="p-2 border">{{ loan.date }}</td>
-          <td class="p-2 border">
-            <span
-              :class="[
-                'px-2 py-1 rounded text-white text-sm',
-                loan.status === 'pending'
-                  ? 'bg-yellow-500'
-                  : loan.status === 'approved'
-                  ? 'bg-green-500'
-                  : 'bg-red-500'
-              ]"
-            >
-              {{ loan.status }}
-            </span>
-          </td>
-          <td class="p-2 border space-x-2">
-            <button class="text-blue-600 hover:underline">Detail</button>
-            <button class="text-green-600 hover:underline">Setujui</button>
-            <button class="text-red-600 hover:underline">Tolak</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import Button from '../../components/Button.vue';
+import TableLoan from '../../components/TableLoan.vue'
+import type { AdminModel } from '../../models/admin.model';
+import { getXls } from '../../provider/xls.provider';
 
-type Loan = {
-  id: number
-  item: string
-  borrower: string
-  date: string
-  status: 'pending' | 'approved' | 'rejected'
+interface Props {
+  showAction?: boolean;
+  admin: AdminModel;
 }
 
-const search = ref('')
-const filterStatus = ref('')
-
-const loans = ref<Loan[]>([
-  { id: 1, item: 'Proyektor', borrower: 'Andi', date: '2025-07-10', status: 'pending' },
-  { id: 2, item: 'Laptop', borrower: 'Budi', date: '2025-07-09', status: 'approved' },
-  { id: 3, item: 'HDMI Cable', borrower: 'Citra', date: '2025-07-08', status: 'rejected' }
-])
-
-const filteredLoans = computed(() => {
-  return loans.value.filter(
-    (loan) =>
-      (loan.item.toLowerCase().includes(search.value.toLowerCase()) ||
-        loan.borrower.toLowerCase().includes(search.value.toLowerCase())) &&
-      (filterStatus.value === '' || loan.status === filterStatus.value)
-  )
+const props = withDefaults(defineProps<Props>(), {
+  showAction: false,
 })
+
+const handleClick = async () => {
+  try {
+    console.log('Starting download...');
+    const response = await getXls();
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    
+    if (response.status !== 200) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    console.log('Blob size:', blob.size, 'Blob type:', blob.type);
+    
+    if (blob.size === 0) {
+      throw new Error('Received empty file');
+    }
+    
+    const url = window.URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'daftar_pinjaman.xlsx';
+    a.style.display = 'none';
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+    
+    console.log('File download initiated successfully');
+    
+  } catch (error: any) {
+    console.error('Error downloading Excel:', error);
+    console.error('Error details:', error.message);
+  }
+};
+
+
 </script>
