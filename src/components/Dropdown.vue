@@ -3,42 +3,43 @@
     <label v-if="label" :for="id" class="text-sm font-medium text-gray-700">{{ label }}</label>
 
     <div
-      class="border rounded px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+      class="border rounded px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer border-gray-300"
       @click="toggleDropdown"
     >
-      <div class="flex flex-row justify-between">
-        <span>
+      <div class="flex flex-row justify-between items-center">
+        <span class="text-gray-900">
           {{ displayText }}
         </span>
-        <ChevronDown />
+        <ChevronDown class="w-4 h-4 text-gray-500" :class="{ 'rotate-180': isOpen }" />
       </div>
     </div>
 
     <div
       v-if="isOpen"
-      class="absolute z-10 mt-1 bg-white border border-gray-300 rounded shadow w-full max-h-60 overflow-auto"
+      class="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+      style="min-width: 100%;"
     >
       <div
         v-for="(option, index) in options"
         :key="index"
-        class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+        class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-900"
         @click.stop="toggleSelect(option)"
       >
         <input
           v-if="multiple"
           type="checkbox"
-          class="mr-2"
+          class="mr-3 w-4 h-4"
           :checked="isSelected(option)"
           @change.prevent
         />
         <input
           v-else
           type="radio"
-          class="mr-2"
+          class="mr-3 w-4 h-4"
           :checked="isSelected(option)"
           @change.prevent
         />
-        <span>{{ option[labelKey] }}</span>
+        <span class="flex-1">{{ option[labelKey] }}</span>
       </div>
     </div>
 
@@ -134,3 +135,9 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
+
+<style scoped>
+.rotate-180 {
+  transform: rotate(180deg);
+}
+</style>
