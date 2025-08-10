@@ -50,8 +50,8 @@ export const getLocalData = (key: string): any | null => {
       localStorage.removeItem(key);
       return null;
     }
-    console.log("Data retrieved from local storage:", payload);
-    return payload;
+    console.log("Data retrieved from local storage:", payload.data);
+    return payload.data;
   } catch (error) {
     console.error("Error getting local data:", error);
     return null;

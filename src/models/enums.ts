@@ -68,3 +68,14 @@ export const BookingStatus = {
 } as const;
 
 export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];
+
+export const MajorName = {
+  KEBIDANAN: 'kebidanan',
+  KEPERAWATAN: 'keperawatan',
+  PROMKES: 'promkes',
+  TLM: 'tlm',
+  FISIO: 'fisio',
+  REKTORAT: 'rektorat',
+} as const;
+
+export type MajorName = typeof MajorName[keyof typeof MajorName];

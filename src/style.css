@@ -1,9 +1,25 @@
 @import 'tailwindcss';
 
 @theme{
-  --color-primary: #CD5656;
-  --color-second: #FFDCDC;
-  --color-tertiary: #FFDCDC;
-  --color-sunset: #B5828C;
-  --color-dusk: #9F8383;
+  /* --color-primary: #504B38;
+  --color-second: #EAE2C6;
+  --color-tertiary: #ADA991;
+  --color-sunset: #424242;
+  --color-dusk: #9F8383; */
+
+  --color-primary: #00C896;
+  --color-second: #FFEB3B;
+  --color-tertiary: #36454F;
+  --color-white: #FFFFFF;
+  --color-platinum: #DFDFDF;
+  
+  --color-fresh: #2DD4BF;        /* Teal */
+  --color-mint: #6EE7B7;         /* Mint hijau muda */
+  --color-lime: #A3E635;         /* Lime */
+  --color-forest: #059669;       /* Hijau gelap */
+  --color-sage: #84CC16;         /* Sage hijau natural */
+  
+  --color-cream: #FEFCE8;        /* Cream */
+  --color-stone: #78716C;        /* Stone abu-abu hangat */
+  --color-pearl: #F8FAFC;        /* Pearl putih lembut */
 }

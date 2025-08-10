@@ -10,3 +10,4 @@ export const ROOM_BOOKING = "roomBooking";
 export const ROOM = "room";
 export const BOOKING = "booking";
 export const ADMIN = "admin";
+export const XLS = "xls";
