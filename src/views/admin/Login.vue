@@ -43,8 +43,8 @@
       rightButtonText="Lanjut"
     />
   </div>
-</div>
   <Loading :isLoading="isLoading" />
+</div>
 </template>
 
 <script setup lang="ts">
@@ -78,6 +78,7 @@ const cancelUser = () => {
 
 const handleLogin = async () => {
   showUserExistsPopup.value = false;
+  
   if (!username.value && !password.value) {
     popupVariant.value = 'error';
     showRightButton.value = false;
@@ -85,40 +86,44 @@ const handleLogin = async () => {
     popupMessage.value = 'Username dan Password harus diisi untuk melakukan login.';
     popupDetailMessage.value = '';
     showUserExistsPopup.value = true;
-    isLoading.value = false;
     return;
   }
 
   isLoading.value = true;
+  
   try {
     const loginData : LoginAdminModel = {
       username: username.value,
       password: password.value
     }
+    
     const data = await loginAdmin(loginData);
+    
     if(!data) {
       popupVariant.value = 'error';
       showRightButton.value = false;
-      popupVariant.value = 'error';
       popupTitle.value = 'Data Tidak Ditemukan!';
-      popupMessage.value = `Tidak ada data admin.`;
-      popupDetailMessage.value = '';
+      popupMessage.value = `Tidak ada data admin dengan username "${username.value}".`;
+      popupDetailMessage.value = 'Pastikan username dan password yang Anda masukkan benar.';
       showUserExistsPopup.value = true;
       isLoading.value = false;
       return;
     }
-    postLocalAdmin(data, ADMINKEY)
+    
+    postLocalAdmin(data, ADMINKEY);
+    
     setTimeout(() => {
       isLoading.value = false;
       router.push("/admin");
-    }, 500);
+    }, 1000);
+    
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     popupVariant.value = 'error';
     showRightButton.value = false;
     popupTitle.value = 'Terjadi Kesalahan!';
-    popupMessage.value = 'Login Gagal. Silakan coba lagi.';
-    popupDetailMessage.value = '';
+    popupMessage.value = 'Login gagal. Silakan periksa koneksi internet dan coba lagi.';
+    popupDetailMessage.value = 'Jika masalah berlanjut, hubungi administrator sistem.';
     showUserExistsPopup.value = true;
     isLoading.value = false;
   }
