@@ -1,16 +1,16 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-blue-100 px-4">
     <div class="card w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
-      <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Register</h2>
+      <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Daftar</h2>
 
       <div class="space-y-5">
         <MyInput
-          v-model="studentId"
+          v-model="identityNumber"
           title="Student ID"
           placeHolder="Enter your Student ID"
           :required="true"
           type="text"
-          id="studentId"
+          id="identityNumber"
         />
         <Button 
           @click="handleSubmit"
@@ -54,7 +54,7 @@ import { useRouter } from 'vue-router';
 import Button from '../../components/Button.vue';
 import { getLocalData, postLocalUser, removeLocalData } from '../../libs/localData';
 import { USERKEY } from '../../core/contants';
-import { getUserByNim } from '../../provider/user.provider';
+import { getUserByIdentity } from '../../provider/user.provider';
 
 interface Props {
   isLoan?: boolean
@@ -69,7 +69,7 @@ const props = withDefaults(defineProps<Props>(),{
 
 const router = useRouter();
 
-const studentId = ref<string>('');
+const identityNumber = ref<string>('');
 
 const showUserExistsPopup = ref(false);
 const popupTitle = ref('');
@@ -82,7 +82,7 @@ onMounted(() => {
   const existingUser = getLocalData(USERKEY);
   if (existingUser) {
     popupTitle.value = 'Data Peminjam Terdeteksi!';
-    popupMessage.value = `Pengguna dengan NIM ${existingUser.studentId} sudah pernah mendaftar.`;
+    popupMessage.value = `Pengguna dengan NIM ${existingUser.identityNumber} sudah pernah mendaftar.`;
     popupDetailMessage.value = `
       Nama: ${existingUser.name}
       Jurusan: ${existingUser.majorName}
@@ -107,22 +107,22 @@ const cancelUser = () => {
 
 const handleSubmit = async () => {
   showUserExistsPopup.value = false;
-if (!studentId.value) {
-  popupVariant.value = 'error';
-  showRightButton.value = false;
-  popupTitle.value = 'Input Tidak Lengkap';
-  popupMessage.value = 'Nomor Induk Mahasiswa (NIM) harus diisi untuk melakukan pendaftaran.';
-  popupDetailMessage.value = '';
-  showUserExistsPopup.value = true;
-  return;
-}
+  if (!identityNumber.value) {
+    popupVariant.value = 'error';
+    showRightButton.value = false;
+    popupTitle.value = 'Input Tidak Lengkap';
+    popupMessage.value = 'Nomor Induk Mahasiswa (NIM) harus diisi untuk melakukan pendaftaran.';
+    popupDetailMessage.value = '';
+    showUserExistsPopup.value = true;
+    return;
+  }
   try {
     const existingUser = getLocalData(USERKEY);
 
-    if (existingUser && existingUser.studentId === studentId.value) {
+    if (existingUser && existingUser.identityNumber === identityNumber.value) {
       popupVariant.value = 'info';
       popupTitle.value = 'Pengguna Sudah Terdaftar!';
-      popupMessage.value = `Pengguna dengan NIM ${studentId.value} sudah ada.`;
+      popupMessage.value = `Pengguna dengan NIM ${identityNumber.value} sudah ada.`;
       popupDetailMessage.value = `
         Nama: ${existingUser.name}
         Jurusan: ${existingUser.majorName}
@@ -135,14 +135,15 @@ if (!studentId.value) {
       return;
     }
 
-    const userData = await getUserByNim(studentId.value);
+    const userData = await getUserByIdentity(identityNumber.value);
+    console.log('User Data:', userData);
     
     if (!userData) {
       popupVariant.value = 'error';
       showRightButton.value = false;
       popupVariant.value = 'error';
       popupTitle.value = 'Data Tidak Ditemukan!';
-      popupMessage.value = `Tidak ada data pengguna dengan NIM ${studentId.value}.`;
+      popupMessage.value = `Tidak ada data pengguna dengan NIM ${identityNumber.value}.`;
       popupDetailMessage.value = '';
       showUserExistsPopup.value = true;
       return;
@@ -151,7 +152,7 @@ if (!studentId.value) {
     postLocalUser(userData, USERKEY);
     props.isLoan ? router.push('/loan/item') : router.push('/booking/request');
 
-    studentId.value = '';
+    identityNumber.value = '';
   } catch (error) {
     console.error('Error during user registration:', error);
     popupVariant.value = 'error';
@@ -162,6 +163,7 @@ if (!studentId.value) {
     showUserExistsPopup.value = true;
   }
 };
+
 const closePopup = () => {
   showUserExistsPopup.value = false;
   showRightButton.value = true;
